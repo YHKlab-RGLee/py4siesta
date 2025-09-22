@@ -1,0 +1,530 @@
+
+#FDF: Opened INPUT_TMP.91065      for input. Unit: 12
+
+fdf-debug              0     # Default value
+SystemName     siesta                                                                                                                              
+SystemLabel     siesta                                                                                                                              
+XML.Write              T     # Default value
+Write.XML              T     # Default value
+XML.AbortOnErrors              F     # Default value
+XML.AbortOnWarnings              F     # Default value
+alloc_report_level              0     # Default value
+xc.functional     GGA                                                                                                                                 
+xc.authors     PBE                                                                                                                                 
+MM.Cutoff          30.00000000     Bohr     # Default value
+MM.UnitsEnergy     eV     # Default value
+MM.UnitsDistance     Ang     # Default value
+WriteIonPlotFiles              F     # Default value
+Atom.Debug.KB.Generation              F     # Default value
+user-basis              F     # Default value
+user-basis-netcdf              F     # Default value
+ReparametrizePseudos              F     # Default value
+Restricted.Radial.Grid              T     # Default value
+Rmax.Radial.Grid          0.000000000         # Default value
+PAO.BasisSize     DZP                                                                                                                                 
+PAO.BasisType     split                                                                                                                               
+PAO.SoftDefault              F     # Default value
+PAO.SoftInnerRadius         0.9000000000         # Default value
+PAO.SoftPotential          40.00000000         # Default value
+PAO.SplitNorm         0.1500000000    
+PAO.SplitNormH         -1.000000000         # Default value
+Number_of_species                        1
+
+%block ChemicalSpeciesLabel                                                    
+ 1 6 C                                                                         
+%endblock ChemicalSpeciesLabel                                                 
+ 
+FilterCutoff          0.000000000     Ry     # Default value
+FilterTol          0.000000000     Ry     # Default value
+KB.Rmax          6.000000000     Bohr     # Default value
+PAO.EnergyShift         0.7349798845E-02         Ry
+# Above item originally: PAO.EnergyShift          100.0000000     meV       
+PAO.SplitTailNorm              F     # Default value
+PAO.FixSplitTable              F     # Default value
+PAO.NewSplitCode              F     # Default value
+PAO.Filter              F     # Default value
+PAO.Keep.Findp.Bug              F     # Default value
+PAO.Filter              F     # Default value
+PAO.Filter              F     # Default value
+PAO.Filter              F     # Default value
+PAO.OldStylePolorbs              T     # Default value
+PAO.SplitTailNorm              F     # Default value
+PAO.FixSplitTable              F     # Default value
+PAO.NewSplitCode              F     # Default value
+PAO.Filter              F     # Default value
+Vna.Filter              F     # Default value
+PCC.Filter              F     # Default value
+PAO.BasisType     split                                                                                                                               
+Atom-Setup-Only              F     # Default value
+UseStructFile              F     # Default value
+MD.UseStructFile              F     # Default value
+LatticeConstant          1.889726878           Bohr
+# Above item originally: LatticeConstant          1.000000000     Ang       
+
+%block LatticeVectors                                                          
+   20.000000000     0.000000000     0.000000000                                
+    0.000000000    20.000000000     0.000000000                                
+    0.000000000     0.000000000   320.400000000                                
+%endblock LatticeVectors                                                       
+ 
+
+%block LatticeVectors                                                          
+   20.000000000     0.000000000     0.000000000                                
+    0.000000000    20.000000000     0.000000000                                
+    0.000000000     0.000000000   320.400000000                                
+%endblock LatticeVectors                                                       
+ 
+AtomicCoordinatesFormat     Ang                                                                                                                                 
+NumberOfAtoms                      240
+ZM.UnitsLength     Bohr           # Default value
+ZM.UnitsAngle     rad            # Default value
+ZM.ForceTolLength         0.1555740000E-02 Ry/Bohr     # Default value
+ZM.ForceTolAngle         0.3565490000E-02 Ry/rad     # Default value
+ZM.MaxDisplLength         0.2000000000     Bohr     # Default value
+ZM.MaxDisplAngle         0.3000000000E-02 rad     # Default value
+ZM.CalcAllForces              F     # Default value
+
+%block AtomicCoordinatesAndAtomicSpecies                                       
+     9.999367993     9.999994000   320.390019426    1    1                     
+     9.999991000     9.999994000    64.080000000    1    2                     
+     9.999991000     9.999994000   128.160000000    1    3                     
+     9.999991000     9.999994000   192.240000000    1    4                     
+     9.999991000     9.999994000   256.320000000    1    5                     
+     9.999991910     9.999995290     1.370318930    1    6                     
+     9.999991910     9.999995290    65.450318930    1    7                     
+     9.999991910     9.999995290   129.530318930    1    8                     
+     9.999991910     9.999995290   193.610318930    1    9                     
+     9.999991910     9.999995290   257.690318930    1   10                     
+     9.999991000     9.999994000     2.670000000    1   11                     
+     9.999991000     9.999994000    66.750000000    1   12                     
+     9.999991000     9.999994000   130.830000000    1   13                     
+     9.999991000     9.999994000   194.910000000    1   14                     
+     9.999991000     9.999994000   258.990000000    1   15                     
+     9.999991910     9.999995290     4.040318930    1   16                     
+     9.999991910     9.999995290    68.120318930    1   17                     
+     9.999991910     9.999995290   132.200318930    1   18                     
+     9.999991910     9.999995290   196.280318930    1   19                     
+     9.999991910     9.999995290   260.360318930    1   20                     
+     9.999991000     9.999994000     5.340000000    1   21                     
+     9.999991000     9.999994000    69.420000000    1   22                     
+     9.999991000     9.999994000   133.500000000    1   23                     
+     9.999991000     9.999994000   197.580000000    1   24                     
+     9.999991000     9.999994000   261.660000000    1   25                     
+     9.999991910     9.999995290     6.710318930    1   26                     
+     9.999991910     9.999995290    70.790318930    1   27                     
+     9.999991910     9.999995290   134.870318930    1   28                     
+     9.999991910     9.999995290   198.950318930    1   29                     
+     9.999991910     9.999995290   263.030318930    1   30                     
+     9.999991000     9.999994000     8.010000000    1   31                     
+     9.999991000     9.999994000    72.090000000    1   32                     
+     9.999991000     9.999994000   136.170000000    1   33                     
+     9.999991000     9.999994000   200.250000000    1   34                     
+     9.999991000     9.999994000   264.330000000    1   35                     
+     9.999991910     9.999995290     9.380318930    1   36                     
+     9.999991910     9.999995290    73.460318930    1   37                     
+     9.999991910     9.999995290   137.540318930    1   38                     
+     9.999991910     9.999995290   201.620318930    1   39                     
+     9.999991910     9.999995290   265.700318930    1   40                     
+     9.999991000     9.999994000    10.680000000    1   41                     
+     9.999991000     9.999994000    74.760000000    1   42                     
+     9.999991000     9.999994000   138.840000000    1   43                     
+     9.999991000     9.999994000   202.920000000    1   44                     
+     9.999991000     9.999994000   267.000000000    1   45                     
+     9.999991910     9.999995290    12.050318930    1   46                     
+     9.999991910     9.999995290    76.130318930    1   47                     
+     9.999991910     9.999995290   140.210318930    1   48                     
+     9.999991910     9.999995290   204.290318930    1   49                     
+     9.999991910     9.999995290   268.370318930    1   50                     
+     9.999991000     9.999994000    13.350000000    1   51                     
+     9.999991000     9.999994000    77.430000000    1   52                     
+     9.999991000     9.999994000   141.510000000    1   53                     
+     9.999991000     9.999994000   205.590000000    1   54                     
+     9.999991000     9.999994000   269.670000000    1   55                     
+     9.999991910     9.999995290    14.720318930    1   56                     
+     9.999991910     9.999995290    78.800318930    1   57                     
+     9.999991910     9.999995290   142.880318930    1   58                     
+     9.999991910     9.999995290   206.960318930    1   59                     
+     9.999991910     9.999995290   271.040318930    1   60                     
+     9.999991000     9.999994000    16.020000000    1   61                     
+     9.999991000     9.999994000    80.100000000    1   62                     
+     9.999991000     9.999994000   144.180000000    1   63                     
+     9.999991000     9.999994000   208.260000000    1   64                     
+     9.999991000     9.999994000   272.340000000    1   65                     
+     9.999991910     9.999995290    17.390318930    1   66                     
+     9.999991910     9.999995290    81.470318930    1   67                     
+     9.999991910     9.999995290   145.550318930    1   68                     
+     9.999991910     9.999995290   209.630318930    1   69                     
+     9.999991910     9.999995290   273.710318930    1   70                     
+     9.999991000     9.999994000    18.690000000    1   71                     
+     9.999991000     9.999994000    82.770000000    1   72                     
+     9.999991000     9.999994000   146.850000000    1   73                     
+     9.999991000     9.999994000   210.930000000    1   74                     
+     9.999991000     9.999994000   275.010000000    1   75                     
+     9.999991910     9.999995290    20.060318930    1   76                     
+     9.999991910     9.999995290    84.140318930    1   77                     
+     9.999991910     9.999995290   148.220318930    1   78                     
+     9.999991910     9.999995290   212.300318930    1   79                     
+     9.999991910     9.999995290   276.380318930    1   80                     
+     9.999991000     9.999994000    21.360000000    1   81                     
+     9.999991000     9.999994000    85.440000000    1   82                     
+     9.999991000     9.999994000   149.520000000    1   83                     
+     9.999991000     9.999994000   213.600000000    1   84                     
+     9.999991000     9.999994000   277.680000000    1   85                     
+     9.999991910     9.999995290    22.730318930    1   86                     
+     9.999991910     9.999995290    86.810318930    1   87                     
+     9.999991910     9.999995290   150.890318930    1   88                     
+     9.999991910     9.999995290   214.970318930    1   89                     
+     9.999991910     9.999995290   279.050318930    1   90                     
+     9.999991000     9.999994000    24.030000000    1   91                     
+     9.999991000     9.999994000    88.110000000    1   92                     
+     9.999991000     9.999994000   152.190000000    1   93                     
+     9.999991000     9.999994000   216.270000000    1   94                     
+     9.999991000     9.999994000   280.350000000    1   95                     
+     9.999991910     9.999995290    25.400318930    1   96                     
+     9.999991910     9.999995290    89.480318930    1   97                     
+     9.999991910     9.999995290   153.560318930    1   98                     
+     9.999991910     9.999995290   217.640318930    1   99                     
+     9.999991910     9.999995290   281.720318930    1  100                     
+     9.999991000     9.999994000    26.700000000    1  101                     
+     9.999991000     9.999994000    90.780000000    1  102                     
+     9.999991000     9.999994000   154.860000000    1  103                     
+     9.999991000     9.999994000   218.940000000    1  104                     
+     9.999991000     9.999994000   283.020000000    1  105                     
+     9.999991910     9.999995290    28.070318930    1  106                     
+     9.999991910     9.999995290    92.150318930    1  107                     
+     9.999991910     9.999995290   156.230318930    1  108                     
+     9.999991910     9.999995290   220.310318930    1  109                     
+     9.999991910     9.999995290   284.390318930    1  110                     
+     9.999991000     9.999994000    29.370000000    1  111                     
+     9.999991000     9.999994000    93.450000000    1  112                     
+     9.999991000     9.999994000   157.530000000    1  113                     
+     9.999991000     9.999994000   221.610000000    1  114                     
+     9.999991000     9.999994000   285.690000000    1  115                     
+     9.999991910     9.999995290    30.740318930    1  116                     
+     9.999991910     9.999995290    94.820318930    1  117                     
+     9.999991910     9.999995290   158.900318930    1  118                     
+     9.999991910     9.999995290   222.980318930    1  119                     
+     9.999991910     9.999995290   287.060318930    1  120                     
+     9.999991000     9.999994000    32.040000000    1  121                     
+     9.999991000     9.999994000    96.120000000    1  122                     
+     9.999991000     9.999994000   160.200000000    1  123                     
+     9.999991000     9.999994000   224.280000000    1  124                     
+     9.999991000     9.999994000   288.360000000    1  125                     
+     9.999991910     9.999995290    33.410318930    1  126                     
+     9.999991910     9.999995290    97.490318930    1  127                     
+     9.999991910     9.999995290   161.570318930    1  128                     
+     9.999991910     9.999995290   225.650318930    1  129                     
+     9.999991910     9.999995290   289.730318930    1  130                     
+     9.999991000     9.999994000    34.710000000    1  131                     
+     9.999991000     9.999994000    98.790000000    1  132                     
+     9.999991000     9.999994000   162.870000000    1  133                     
+     9.999991000     9.999994000   226.950000000    1  134                     
+     9.999991000     9.999994000   291.030000000    1  135                     
+     9.999991910     9.999995290    36.080318930    1  136                     
+     9.999991910     9.999995290   100.160318930    1  137                     
+     9.999991910     9.999995290   164.240318930    1  138                     
+     9.999991910     9.999995290   228.320318930    1  139                     
+     9.999991910     9.999995290   292.400318930    1  140                     
+     9.999991000     9.999994000    37.380000000    1  141                     
+     9.999991000     9.999994000   101.460000000    1  142                     
+     9.999991000     9.999994000   165.540000000    1  143                     
+     9.999991000     9.999994000   229.620000000    1  144                     
+     9.999991000     9.999994000   293.700000000    1  145                     
+     9.999991910     9.999995290    38.750318930    1  146                     
+     9.999991910     9.999995290   102.830318930    1  147                     
+     9.999991910     9.999995290   166.910318930    1  148                     
+     9.999991910     9.999995290   230.990318930    1  149                     
+     9.999991910     9.999995290   295.070318930    1  150                     
+     9.999991000     9.999994000    40.050000000    1  151                     
+     9.999991000     9.999994000   104.130000000    1  152                     
+     9.999991000     9.999994000   168.210000000    1  153                     
+     9.999991000     9.999994000   232.290000000    1  154                     
+     9.999991000     9.999994000   296.370000000    1  155                     
+     9.999991910     9.999995290    41.420318930    1  156                     
+     9.999991910     9.999995290   105.500318930    1  157                     
+     9.999991910     9.999995290   169.580318930    1  158                     
+     9.999991910     9.999995290   233.660318930    1  159                     
+     9.999991910     9.999995290   297.740318930    1  160                     
+     9.999991000     9.999994000    42.720000000    1  161                     
+     9.999991000     9.999994000   106.800000000    1  162                     
+     9.999991000     9.999994000   170.880000000    1  163                     
+     9.999991000     9.999994000   234.960000000    1  164                     
+     9.999991000     9.999994000   299.040000000    1  165                     
+     9.999991910     9.999995290    44.090318930    1  166                     
+     9.999991910     9.999995290   108.170318930    1  167                     
+     9.999991910     9.999995290   172.250318930    1  168                     
+     9.999991910     9.999995290   236.330318930    1  169                     
+     9.999991910     9.999995290   300.410318930    1  170                     
+     9.999991000     9.999994000    45.390000000    1  171                     
+     9.999991000     9.999994000   109.470000000    1  172                     
+     9.999991000     9.999994000   173.550000000    1  173                     
+     9.999991000     9.999994000   237.630000000    1  174                     
+     9.999991000     9.999994000   301.710000000    1  175                     
+     9.999991910     9.999995290    46.760318930    1  176                     
+     9.999991910     9.999995290   110.840318930    1  177                     
+     9.999991910     9.999995290   174.920318930    1  178                     
+     9.999991910     9.999995290   239.000318930    1  179                     
+     9.999991910     9.999995290   303.080318930    1  180                     
+     9.999991000     9.999994000    48.060000000    1  181                     
+     9.999991000     9.999994000   112.140000000    1  182                     
+     9.999991000     9.999994000   176.220000000    1  183                     
+     9.999991000     9.999994000   240.300000000    1  184                     
+     9.999991000     9.999994000   304.380000000    1  185                     
+     9.999991910     9.999995290    49.430318930    1  186                     
+     9.999991910     9.999995290   113.510318930    1  187                     
+     9.999991910     9.999995290   177.590318930    1  188                     
+     9.999991910     9.999995290   241.670318930    1  189                     
+     9.999991910     9.999995290   305.750318930    1  190                     
+     9.999991000     9.999994000    50.730000000    1  191                     
+     9.999991000     9.999994000   114.810000000    1  192                     
+     9.999991000     9.999994000   178.890000000    1  193                     
+     9.999991000     9.999994000   242.970000000    1  194                     
+     9.999991000     9.999994000   307.050000000    1  195                     
+     9.999991910     9.999995290    52.100318930    1  196                     
+     9.999991910     9.999995290   116.180318930    1  197                     
+     9.999991910     9.999995290   180.260318930    1  198                     
+     9.999991910     9.999995290   244.340318930    1  199                     
+     9.999991910     9.999995290   308.420318930    1  200                     
+     9.999991000     9.999994000    53.400000000    1  201                     
+     9.999991000     9.999994000   117.480000000    1  202                     
+     9.999991000     9.999994000   181.560000000    1  203                     
+     9.999991000     9.999994000   245.640000000    1  204                     
+     9.999991000     9.999994000   309.720000000    1  205                     
+     9.999991910     9.999995290    54.770318930    1  206                     
+     9.999991910     9.999995290   118.850318930    1  207                     
+     9.999991910     9.999995290   182.930318930    1  208                     
+     9.999991910     9.999995290   247.010318930    1  209                     
+     9.999991910     9.999995290   311.090318930    1  210                     
+     9.999991000     9.999994000    56.070000000    1  211                     
+     9.999991000     9.999994000   120.150000000    1  212                     
+     9.999991000     9.999994000   184.230000000    1  213                     
+     9.999991000     9.999994000   248.310000000    1  214                     
+     9.999991000     9.999994000   312.390000000    1  215                     
+     9.999991910     9.999995290    57.440318930    1  216                     
+     9.999991910     9.999995290   121.520318930    1  217                     
+     9.999991910     9.999995290   185.600318930    1  218                     
+     9.999991910     9.999995290   249.680318930    1  219                     
+     9.999991910     9.999995290   313.760318930    1  220                     
+     9.999991000     9.999994000    58.740000000    1  221                     
+     9.999991000     9.999994000   122.820000000    1  222                     
+     9.999991000     9.999994000   186.900000000    1  223                     
+     9.999991000     9.999994000   250.980000000    1  224                     
+     9.999991000     9.999994000   315.060000000    1  225                     
+     9.999991910     9.999995290    60.110318930    1  226                     
+     9.999991910     9.999995290   124.190318930    1  227                     
+     9.999991910     9.999995290   188.270318930    1  228                     
+     9.999991910     9.999995290   252.350318930    1  229                     
+     9.999991910     9.999995290   316.430318930    1  230                     
+     9.999991000     9.999994000    61.410000000    1  231                     
+     9.999991000     9.999994000   125.490000000    1  232                     
+     9.999991000     9.999994000   189.570000000    1  233                     
+     9.999991000     9.999994000   253.650000000    1  234                     
+     9.999991000     9.999994000   317.730000000    1  235                     
+     9.999991910     9.999995290    62.780318930    1  236                     
+     9.999991910     9.999995290   126.860318930    1  237                     
+     9.999991910     9.999995290   190.940318930    1  238                     
+     9.999991910     9.999995290   255.020318930    1  239                     
+     9.999991910     9.999995290   319.100318930    1  240                     
+%endblock AtomicCoordinatesAndAtomicSpecies                                    
+ 
+UseSaveData              F     # Default value
+MD.UseSaveXV              F     # Default value
+MD.UseSaveZM              F     # Default value
+WriteCoorInitial              T     # Default value
+MD.TypeOfRun     none     # Default value
+MaxBondDistance          6.000000000     Bohr     # Default value
+Output-Structure-Only              F     # Default value
+SpinPolarized              F     # Default value
+NonCollinearSpin              F     # Default value
+LongOutput              F     # Default value
+WriteDenchar              F     # Default value
+WriteMullikenPop              0     # Default value
+WriteHirshfeldPop              F     # Default value
+WriteVoronoiPop              F     # Default value
+PartialChargesAtEveryGeometry              F     # Default value
+PartialChargesAtEveryScfStep              F     # Default value
+MeshCutoff          100.0000000             Ry
+# Above item originally: MeshCutoff          100.0000000     Ry        
+NetCharge          0.000000000         # Default value
+MaxSCFIterations                      300
+SCFMustConverge              T
+DM.NumberPulay                        3
+DM.NumberBroyden              0     # Default value
+DM.FIRE.Mixing              F     # Default value
+DM.MixSCF1              F     # Default value
+DM.PulayOnFile              F
+DM.Pulay.Avoid.First.After.Kick              F     # Default value
+DM.MixingWeight         0.1000000000    
+DM.OccupancyTolerance         0.1000000000E-11     # Default value
+DM.NumberKick              0     # Default value
+DM.KickMixingWeight         0.5000000000         # Default value
+DM.Tolerance         0.1000000000E-03
+DM.RequireEnergyConvergence              F     # Default value
+DM.EnergyTolerance         0.7349806700E-05 Ry     # Default value
+DM.RequireHarrisConvergence              F     # Default value
+DM.HarrisTolerance         0.7349806700E-05 Ry     # Default value
+UseSaveData              F     # Default value
+DM.UseSaveDM              T
+NeglNonOverlapInt              F
+SolutionMethod     Diagon                                                                                                                              
+Diag.DivideAndConquer              T     # Default value
+Diag.Memory          1.000000000         # Default value
+ElectronicTemperature         0.1900069269E-02         Ry
+# Above item originally: ElectronicTemperature          300.0000000     K         
+FixSpin              F     # Default value
+ON.MaxNumIter           1000     # Default value
+ON.etol         0.1000000000E-07     # Default value
+ON.eta          0.000000000     Ry     # Default value
+ON.eta_alpha          0.000000000     Ry     # Default value
+ON.eta_beta          0.000000000     Ry     # Default value
+On.RcLWF          9.500000000     Bohr     # Default value
+ON.UseSaveLWF              F     # Default value
+ON.functional     kim     # Default value
+ON.ChemicalPotentialUse              F     # Default value
+ON.ChemicalPotential              F     # Default value
+ON.ChemicalPotentialRc          9.500000000     Bohr     # Default value
+ON.ChemicalPotentialTemperature         0.5000000000E-01 Ry     # Default value
+ON.ChemicalPotentialOrder            100     # Default value
+MD.VariableCell              F     # Default value
+MD.TypeOfRun     verlet     # Default value
+MD.NumCGsteps              0     # Default value
+MD.MaxCGDispl         0.2000000000     Bohr     # Default value
+MD.MaxForceTol         0.1555740000E-02 Ry/Bohr     # Default value
+MD.MaxStressTol         0.6797730000E-04 Ry/Bohr**3     # Default value
+MD.InitialTimeStep              1     # Default value
+MD.FinalTimeStep              1     # Default value
+MD.LengthTimeStep          1.000000000     fs     # Default value
+MD.Quench              F     # Default value
+MD.FireQuench              F     # Default value
+MD.InitialTemperature          0.000000000     K     # Default value
+MD.TargetTemperature          0.000000000     K     # Default value
+MD.TargetPressure          0.000000000     Ry/Bohr**3     # Default value
+MD.NoseMass          100.0000000     Ry*fs**2     # Default value
+MD.ParrinelloRahmanMass          100.0000000     Ry*fs**2     # Default value
+MD.AnnealOption     TemperatureAndPressure     # Default value
+MD.TauRelax          100.0000000     fs     # Default value
+MD.BulkModulus         0.6797730000E-02 Ry/Bohr**3     # Default value
+MD.FCDispl         0.4000000000E-01 Bohr     # Default value
+MD.FCfirst              1     # Default value
+MD.FClast            240     # Default value
+UseSpatialDecomposition              F     # Default value
+UseDomainDecomposition              F     # Default value
+Harris_functional              F     # Default value
+WriteKpoints              F     # Default value
+WriteForces              F     # Default value
+WriteDM              T     # Default value
+WriteDM.NetCDF              T     # Default value
+WriteDM.History.NetCDF              F     # Default value
+WriteDMHS.NetCDF              T     # Default value
+WriteDMHS.History.NetCDF              F     # Default value
+SCF.Read.Charge.NetCDF              F     # Default value
+SCF.Read.Deformation.Charge.NetCDF              F     # Default value
+SaveInitialChargeDensity              F     # Default value
+UseNewDiagk              F     # Default value
+WriteBands              F     # Default value
+WriteKbands              F     # Default value
+WriteEigenvalues              F     # Default value
+WriteCoorStep              F     # Default value
+WriteMDhistory              F     # Default value
+WriteMDXmol              F     # Default value
+UseSaveData              F     # Default value
+SaveHS              F     # Default value
+FixAuxiliaryCell              F     # Default value
+NaiveAuxiliaryCell              F     # Default value
+ReInitialiseDM              T     # Default value
+DM.AllowReuse              T     # Default value
+DM.AllowExtrapolation              T     # Default value
+MullikenInSCF              F     # Default value
+WarningMinimumAtomicDistance          1.000000000     Bohr     # Default value
+BornCharge              F     # Default value
+ChangeKgridInMD              F     # Default value
+Diag.ParallelOverK              T
+MD.RelaxCellOnly              F     # Default value
+MD.RemoveIntraMolecularPressure              F     # Default value
+COOP.Write              F     # Default value
+SaveRho              F     # Default value
+SaveDeltaRho              F     # Default value
+SaveElectrostaticPotential              F     # Default value
+SaveNeutralAtomPotential              F     # Default value
+SaveTotalPotential              F     # Default value
+SaveIonicCharge              F     # Default value
+SaveBaderCharge              F     # Default value
+SaveTotalCharge              F     # Default value
+RcSpatial          0.000000000     Bohr     # Default value
+ProcessorGridX              1     # Default value
+ProcessorGridY              1     # Default value
+ProcessorGridZ              1     # Default value
+processorY              2     # Default value
+blocksize             24     # Default value
+NumberOfEigenStates           3120     # Default value
+TimeReversalSymmetryForKpoints              T     # Default value
+
+%block kgrid_Monkhorst_Pack                                                    
+   1   0   0   0.000000                                                        
+   0   1   0   0.000000                                                        
+   0   0   1   0.000000                                                        
+%endblock kgrid_Monkhorst_Pack                                                 
+ 
+WFS.EnergyMin        -0.1797693135+309 Ry     # Default value
+WFS.EnergyMax         0.1797693135+309 Ry     # Default value
+LongOutput              F     # Default value
+WriteWaveFunctions              F     # Default value
+WriteWaveDebug              F     # Default value
+ForceAuxCell              F     # Default value
+AtomicCoordinatesFormat     Ang                                                                                                                                 
+AtomCoorFormatOut     Ang                        # Default value
+LatticeConstant          1.889726878           Bohr
+# Above item originally: LatticeConstant          1.000000000     Ang       
+DM.FormattedFiles              F     # Default value
+DM.FormattedInput              F     # Default value
+DM.FormattedOutput              F     # Default value
+Harris_functional              F     # Default value
+MeshSubDivisions              2     # Default value
+LatticeConstant          1.889726878           Bohr
+# Above item originally: LatticeConstant          1.000000000     Ang       
+
+%block LatticeVectors                                                          
+   20.000000000     0.000000000     0.000000000                                
+    0.000000000    20.000000000     0.000000000                                
+    0.000000000     0.000000000   320.400000000                                
+%endblock LatticeVectors                                                       
+ 
+
+%block LatticeVectors                                                          
+   20.000000000     0.000000000     0.000000000                                
+    0.000000000    20.000000000     0.000000000                                
+    0.000000000     0.000000000   320.400000000                                
+%endblock LatticeVectors                                                       
+ 
+DirectPhi              F     # Default value
+SimulateDoping              F     # Default value
+SlabDipoleCorrection              F     # Default value
+Diag.ParallelOverK              T
+LatticeConstant          1.889726878           Bohr
+# Above item originally: LatticeConstant          1.000000000     Ang       
+
+%block LatticeVectors                                                          
+   20.000000000     0.000000000     0.000000000                                
+    0.000000000    20.000000000     0.000000000                                
+    0.000000000     0.000000000   320.400000000                                
+%endblock LatticeVectors                                                       
+ 
+
+%block LatticeVectors                                                          
+   20.000000000     0.000000000     0.000000000                                
+    0.000000000    20.000000000     0.000000000                                
+    0.000000000     0.000000000   320.400000000                                
+%endblock LatticeVectors                                                       
+ 
+Diag.AllInOne              F     # Default value
+Diag.DivideAndConquer              T     # Default value
+Diag.NoExpert              F     # Default value
+Diag.PreRotate              F     # Default value
+Diag.Use2D              T     # Default value
+SingleExcitation              F     # Default value
+OccupationFunction     FD     # Default value
+OccupationFunction     FD     # Default value
+WriteCoorXmol              F     # Default value
+WriteCoorCerius              F     # Default value
+BasisPressure         0.2000000000     GPa     # Default value
+OpticalCalculation              F     # Default value

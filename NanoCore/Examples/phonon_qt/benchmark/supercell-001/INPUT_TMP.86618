@@ -1,0 +1,23 @@
+#(1) General system descriptors
+SystemName       siesta           # Descriptive name of the system
+SystemLabel      siesta           # Short name for naming files
+%include STRUCT.fdf
+%include KPT.fdf
+%include BASIS.fdf
+#(4) DFT, Grid, SCF
+XC.functional         GGA            # LDA or GGA (default = LDA)
+XC.authors            PBE            # CA (Ceperley-Aldr) = PZ
+MeshCutoff            100.000000    Ry      # Default: 50.0 Ry ~ 0.444 Bohr
+                                    #         100.0 Ry ~ 0.314 Bohr
+MaxSCFIterations      300           # Default: 50
+DM.MixingWeight       0.050         # Default: 0.25
+DM.NumberPulay        0             # Default: 0
+DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2
+DM.Tolerance          1.d-4         # Default: 1.d-4
+DM.UseSaveDM          .true.        # because of the bug
+SCFMustConverge       .true.
+NeglNonOverlapInt     F             # Default: F
+#(5) Eigenvalue problem: order-N or diagonalization
+SolutionMethod        Diagon
+ElectronicTemperature 300.0 K       # Default: 300.0 K
+Diag.ParallelOverK    true

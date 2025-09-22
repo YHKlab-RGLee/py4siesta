@@ -1,0 +1,20 @@
+# path, number of atoms, broadening factor, and options
+left_path    = /home/jhiskard/mylib/phonon2/benchmark/CarbonChain_Strain/02.band_vs_strain/c_2.670000/trans_048atoms
+right_path   = /home/jhiskard/mylib/phonon2/benchmark/CarbonChain_Strain/02.band_vs_strain/c_2.670000/trans_048atoms
+natm_left  = 16
+natm_right = 16
+eta = 0.00001j
+is_continue = 0
+is_homogeneous = 1
+is_direct = 0
+is_gamma_only = 0
+omega_min = 0.001
+omega_max = 4.000
+omega_step = 0.01
+# POST PROCESS PART
+post_type = qavtrns
+qpt = 0,0,0
+#post_type = qdeptrns
+#post_type = qtrns
+#T1 = 300.0
+#T2 = 200.0

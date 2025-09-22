@@ -1,0 +1,1075 @@
+Siesta Version:                                        siesta-3.2
+Architecture  : x86_64-unknown-linux-gnu--unknown
+Compiler flags: mpiifort -g -O2 -xSSE4.2 -fPIC -fp-model source -shared-intel
+PARALLEL version
+
+* Running on    8 nodes in parallel
+>> Start of run:  24-APR-2019  17:49:46
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+#(1) General system descriptors
+SystemName       siesta           # Descriptive name of the system
+SystemLabel      siesta           # Short name for naming files
+%include STRUCT.fdf
+%include KPT.fdf
+%include BASIS.fdf
+#(4) DFT, Grid, SCF
+XC.functional         GGA            # LDA or GGA (default = LDA)
+XC.authors            PBE            # CA (Ceperley-Aldr) = PZ
+MeshCutoff            100.000000    Ry      # Default: 50.0 Ry ~ 0.444 Bohr
+                                    #         100.0 Ry ~ 0.314 Bohr
+MaxSCFIterations      300           # Default: 50
+DM.MixingWeight       0.050         # Default: 0.25
+DM.NumberPulay        0             # Default: 0
+DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2
+DM.Tolerance          1.d-4         # Default: 1.d-4
+DM.UseSaveDM          .true.        # because of the bug
+SCFMustConverge       .true.
+NeglNonOverlapInt     F             # Default: F
+#(5) Eigenvalue problem: order-N or diagonalization
+SolutionMethod        Diagon
+ElectronicTemperature 300.0 K       # Default: 300.0 K
+Diag.ParallelOverK    true
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: siesta
+reinit: -----------------------------------------------------------------------
+reinit: System Label: siesta                                                      
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: C Atomic number:           6
+Ground state valence configuration:   2s02  2p02
+Reading pseudopotential information in formatted form from C.psf
+
+Valence configuration for pseudopotential generation:
+2s( 2.00) rc: 1.54
+2p( 2.00) rc: 1.54
+3d( 0.00) rc: 1.54
+4f( 0.00) rc: 1.54
+For C, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+C                    Z=   6    Mass=  12.010        Charge= 0.17977+309
+Lmxo=1 Lmxkb= 3    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for C                     (Z =   6)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    4.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Perdew, Burke & Ernzerhof 1996
+V l=0 = -2*Zval/r beyond r=  1.5227
+V l=1 = -2*Zval/r beyond r=  1.5227
+V l=2 = -2*Zval/r beyond r=  1.5227
+V l=3 = -2*Zval/r beyond r=  1.5038
+All V_l potentials equal beyond r=  1.5227
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.5227
+
+VLOCAL1: 99.0% of the norm of Vloc inside     18.722 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     42.668 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.83678
+atom: Maximum radius for r*vlocal+2*Zval:    1.58088
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.704034   el= -1.009801   Ekb=  5.335044   kbcos=  0.316824
+   l= 1   rc=  1.704034   el= -0.388707   Ekb= -3.785862   kbcos= -0.366464
+   l= 2   rc=  1.791422   el=  0.001971   Ekb= -0.970471   kbcos= -0.009212
+   l= 3   rc=  1.859892   el=  0.003065   Ekb= -0.399525   kbcos= -0.001223
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 2s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.632753
+                 energy =   -1.002270
+                kinetic =    0.855760
+    potential(screened) =   -1.858031
+       potential(ionic) =   -5.417575
+
+   izeta = 2
+                 rmatch =    3.431921
+              splitnorm =    0.150000
+                 energy =   -0.867111
+                kinetic =    1.300804
+    potential(screened) =   -2.167915
+       potential(ionic) =   -5.962684
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 2p
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    5.658549
+                 energy =   -0.381140
+                kinetic =    2.399701
+    potential(screened) =   -2.780841
+       potential(ionic) =   -6.206085
+
+   izeta = 2
+                 rmatch =    3.653288
+              splitnorm =    0.150000
+                 energy =   -0.249149
+                kinetic =    3.542762
+    potential(screened) =   -3.791911
+       potential(ionic) =   -7.581078
+
+POLgen: Perturbative polarization orbital with L=  2
+
+POLgen: Polarization orbital for state 2p
+
+   izeta = 1
+                     rc =    5.658549
+                 energy =    1.109913
+                kinetic =    2.304789
+    potential(screened) =   -1.194876
+       potential(ionic) =   -4.013592
+atom: Total number of Sankey-type orbitals: 13
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 2s( 2.00)                                                            
+ 2p( 2.00)                                                            
+Vna: chval, zval:    4.00000   4.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   5.658549
+comcore: Pseudo-core radius Rcore=  1.791422
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1    6 C                       # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+C                     2                    # Species label, number of l-shells
+ n=2   0   2                         # n, l, Nzeta 
+   4.633      3.432   
+   1.000      1.000   
+ n=2   1   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   5.659      3.653   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                          (in Angstroms)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:     18.89843  18.89726   0.01886  1        1
+siesta:     18.89725  18.89726 121.09370  1        2
+siesta:     18.89725  18.89726 242.18740  1        3
+siesta:     18.89725  18.89726 363.28109  1        4
+siesta:     18.89725  18.89726 484.37479  1        5
+siesta:     18.89725  18.89726   2.58953  1        6
+siesta:     18.89725  18.89726 123.68323  1        7
+siesta:     18.89725  18.89726 244.77693  1        8
+siesta:     18.89725  18.89726 365.87062  1        9
+siesta:     18.89725  18.89726 486.96432  1       10
+siesta:     18.89725  18.89726   5.04557  1       11
+siesta:     18.89725  18.89726 126.13927  1       12
+siesta:     18.89725  18.89726 247.23297  1       13
+siesta:     18.89725  18.89726 368.32667  1       14
+siesta:     18.89725  18.89726 489.42036  1       15
+siesta:     18.89725  18.89726   7.63510  1       16
+siesta:     18.89725  18.89726 128.72880  1       17
+siesta:     18.89725  18.89726 249.82250  1       18
+siesta:     18.89725  18.89726 370.91619  1       19
+siesta:     18.89725  18.89726 492.00989  1       20
+siesta:     18.89725  18.89726  10.09114  1       21
+siesta:     18.89725  18.89726 131.18484  1       22
+siesta:     18.89725  18.89726 252.27854  1       23
+siesta:     18.89725  18.89726 373.37224  1       24
+siesta:     18.89725  18.89726 494.46593  1       25
+siesta:     18.89725  18.89726  12.68067  1       26
+siesta:     18.89725  18.89726 133.77437  1       27
+siesta:     18.89725  18.89726 254.86807  1       28
+siesta:     18.89725  18.89726 375.96177  1       29
+siesta:     18.89725  18.89726 497.05546  1       30
+siesta:     18.89725  18.89726  15.13671  1       31
+siesta:     18.89725  18.89726 136.23041  1       32
+siesta:     18.89725  18.89726 257.32411  1       33
+siesta:     18.89725  18.89726 378.41781  1       34
+siesta:     18.89725  18.89726 499.51151  1       35
+siesta:     18.89725  18.89726  17.72624  1       36
+siesta:     18.89725  18.89726 138.81994  1       37
+siesta:     18.89725  18.89726 259.91364  1       38
+siesta:     18.89725  18.89726 381.00734  1       39
+siesta:     18.89725  18.89726 502.10103  1       40
+siesta:     18.89725  18.89726  20.18228  1       41
+siesta:     18.89725  18.89726 141.27598  1       42
+siesta:     18.89725  18.89726 262.36968  1       43
+siesta:     18.89725  18.89726 383.46338  1       44
+siesta:     18.89725  18.89726 504.55708  1       45
+siesta:     18.89725  18.89726  22.77181  1       46
+siesta:     18.89725  18.89726 143.86551  1       47
+siesta:     18.89725  18.89726 264.95921  1       48
+siesta:     18.89725  18.89726 386.05291  1       49
+siesta:     18.89725  18.89726 507.14660  1       50
+siesta:     18.89725  18.89726  25.22785  1       51
+siesta:     18.89725  18.89726 146.32155  1       52
+siesta:     18.89725  18.89726 267.41525  1       53
+siesta:     18.89725  18.89726 388.50895  1       54
+siesta:     18.89725  18.89726 509.60265  1       55
+siesta:     18.89725  18.89726  27.81738  1       56
+siesta:     18.89725  18.89726 148.91108  1       57
+siesta:     18.89725  18.89726 270.00478  1       58
+siesta:     18.89725  18.89726 391.09848  1       59
+siesta:     18.89725  18.89726 512.19218  1       60
+siesta:     18.89725  18.89726  30.27342  1       61
+siesta:     18.89725  18.89726 151.36712  1       62
+siesta:     18.89725  18.89726 272.46082  1       63
+siesta:     18.89725  18.89726 393.55452  1       64
+siesta:     18.89725  18.89726 514.64822  1       65
+siesta:     18.89725  18.89726  32.86295  1       66
+siesta:     18.89725  18.89726 153.95665  1       67
+siesta:     18.89725  18.89726 275.05035  1       68
+siesta:     18.89725  18.89726 396.14405  1       69
+siesta:     18.89725  18.89726 517.23775  1       70
+siesta:     18.89725  18.89726  35.31900  1       71
+siesta:     18.89725  18.89726 156.41269  1       72
+siesta:     18.89725  18.89726 277.50639  1       73
+siesta:     18.89725  18.89726 398.60009  1       74
+siesta:     18.89725  18.89726 519.69379  1       75
+siesta:     18.89725  18.89726  37.90852  1       76
+siesta:     18.89725  18.89726 159.00222  1       77
+siesta:     18.89725  18.89726 280.09592  1       78
+siesta:     18.89725  18.89726 401.18962  1       79
+siesta:     18.89725  18.89726 522.28332  1       80
+siesta:     18.89725  18.89726  40.36457  1       81
+siesta:     18.89725  18.89726 161.45826  1       82
+siesta:     18.89725  18.89726 282.55196  1       83
+siesta:     18.89725  18.89726 403.64566  1       84
+siesta:     18.89725  18.89726 524.73936  1       85
+siesta:     18.89725  18.89726  42.95409  1       86
+siesta:     18.89725  18.89726 164.04779  1       87
+siesta:     18.89725  18.89726 285.14149  1       88
+siesta:     18.89725  18.89726 406.23519  1       89
+siesta:     18.89725  18.89726 527.32889  1       90
+siesta:     18.89725  18.89726  45.41014  1       91
+siesta:     18.89725  18.89726 166.50384  1       92
+siesta:     18.89725  18.89726 287.59753  1       93
+siesta:     18.89725  18.89726 408.69123  1       94
+siesta:     18.89725  18.89726 529.78493  1       95
+siesta:     18.89725  18.89726  47.99967  1       96
+siesta:     18.89725  18.89726 169.09336  1       97
+siesta:     18.89725  18.89726 290.18706  1       98
+siesta:     18.89725  18.89726 411.28076  1       99
+siesta:     18.89725  18.89726 532.37446  1      100
+siesta:     18.89725  18.89726  50.45571  1      101
+siesta:     18.89725  18.89726 171.54941  1      102
+siesta:     18.89725  18.89726 292.64310  1      103
+siesta:     18.89725  18.89726 413.73680  1      104
+siesta:     18.89725  18.89726 534.83050  1      105
+siesta:     18.89725  18.89726  53.04524  1      106
+siesta:     18.89725  18.89726 174.13893  1      107
+siesta:     18.89725  18.89726 295.23263  1      108
+siesta:     18.89725  18.89726 416.32633  1      109
+siesta:     18.89725  18.89726 537.42003  1      110
+siesta:     18.89725  18.89726  55.50128  1      111
+siesta:     18.89725  18.89726 176.59498  1      112
+siesta:     18.89725  18.89726 297.68868  1      113
+siesta:     18.89725  18.89726 418.78237  1      114
+siesta:     18.89725  18.89726 539.87607  1      115
+siesta:     18.89725  18.89726  58.09081  1      116
+siesta:     18.89725  18.89726 179.18451  1      117
+siesta:     18.89725  18.89726 300.27820  1      118
+siesta:     18.89725  18.89726 421.37190  1      119
+siesta:     18.89725  18.89726 542.46560  1      120
+siesta:     18.89725  18.89726  60.54685  1      121
+siesta:     18.89725  18.89726 181.64055  1      122
+siesta:     18.89725  18.89726 302.73425  1      123
+siesta:     18.89725  18.89726 423.82794  1      124
+siesta:     18.89725  18.89726 544.92164  1      125
+siesta:     18.89725  18.89726  63.13638  1      126
+siesta:     18.89725  18.89726 184.23008  1      127
+siesta:     18.89725  18.89726 305.32377  1      128
+siesta:     18.89725  18.89726 426.41747  1      129
+siesta:     18.89725  18.89726 547.51117  1      130
+siesta:     18.89725  18.89726  65.59242  1      131
+siesta:     18.89725  18.89726 186.68612  1      132
+siesta:     18.89725  18.89726 307.77982  1      133
+siesta:     18.89725  18.89726 428.87351  1      134
+siesta:     18.89725  18.89726 549.96721  1      135
+siesta:     18.89725  18.89726  68.18195  1      136
+siesta:     18.89725  18.89726 189.27565  1      137
+siesta:     18.89725  18.89726 310.36935  1      138
+siesta:     18.89725  18.89726 431.46304  1      139
+siesta:     18.89725  18.89726 552.55674  1      140
+siesta:     18.89725  18.89726  70.63799  1      141
+siesta:     18.89725  18.89726 191.73169  1      142
+siesta:     18.89725  18.89726 312.82539  1      143
+siesta:     18.89725  18.89726 433.91909  1      144
+siesta:     18.89725  18.89726 555.01278  1      145
+siesta:     18.89725  18.89726  73.22752  1      146
+siesta:     18.89725  18.89726 194.32122  1      147
+siesta:     18.89725  18.89726 315.41492  1      148
+siesta:     18.89725  18.89726 436.50861  1      149
+siesta:     18.89725  18.89726 557.60231  1      150
+siesta:     18.89725  18.89726  75.68356  1      151
+siesta:     18.89725  18.89726 196.77726  1      152
+siesta:     18.89725  18.89726 317.87096  1      153
+siesta:     18.89725  18.89726 438.96466  1      154
+siesta:     18.89725  18.89726 560.05835  1      155
+siesta:     18.89725  18.89726  78.27309  1      156
+siesta:     18.89725  18.89726 199.36679  1      157
+siesta:     18.89725  18.89726 320.46049  1      158
+siesta:     18.89725  18.89726 441.55418  1      159
+siesta:     18.89725  18.89726 562.64788  1      160
+siesta:     18.89725  18.89726  80.72913  1      161
+siesta:     18.89725  18.89726 201.82283  1      162
+siesta:     18.89725  18.89726 322.91653  1      163
+siesta:     18.89725  18.89726 444.01023  1      164
+siesta:     18.89725  18.89726 565.10393  1      165
+siesta:     18.89725  18.89726  83.31866  1      166
+siesta:     18.89725  18.89726 204.41236  1      167
+siesta:     18.89725  18.89726 325.50606  1      168
+siesta:     18.89725  18.89726 446.59976  1      169
+siesta:     18.89725  18.89726 567.69345  1      170
+siesta:     18.89725  18.89726  85.77470  1      171
+siesta:     18.89725  18.89726 206.86840  1      172
+siesta:     18.89725  18.89726 327.96210  1      173
+siesta:     18.89725  18.89726 449.05580  1      174
+siesta:     18.89725  18.89726 570.14950  1      175
+siesta:     18.89725  18.89726  88.36423  1      176
+siesta:     18.89725  18.89726 209.45793  1      177
+siesta:     18.89725  18.89726 330.55163  1      178
+siesta:     18.89725  18.89726 451.64533  1      179
+siesta:     18.89725  18.89726 572.73902  1      180
+siesta:     18.89725  18.89726  90.82027  1      181
+siesta:     18.89725  18.89726 211.91397  1      182
+siesta:     18.89725  18.89726 333.00767  1      183
+siesta:     18.89725  18.89726 454.10137  1      184
+siesta:     18.89725  18.89726 575.19507  1      185
+siesta:     18.89725  18.89726  93.40980  1      186
+siesta:     18.89725  18.89726 214.50350  1      187
+siesta:     18.89725  18.89726 335.59720  1      188
+siesta:     18.89725  18.89726 456.69090  1      189
+siesta:     18.89725  18.89726 577.78460  1      190
+siesta:     18.89725  18.89726  95.86584  1      191
+siesta:     18.89725  18.89726 216.95954  1      192
+siesta:     18.89725  18.89726 338.05324  1      193
+siesta:     18.89725  18.89726 459.14694  1      194
+siesta:     18.89725  18.89726 580.24064  1      195
+siesta:     18.89725  18.89726  98.45537  1      196
+siesta:     18.89725  18.89726 219.54907  1      197
+siesta:     18.89725  18.89726 340.64277  1      198
+siesta:     18.89725  18.89726 461.73647  1      199
+siesta:     18.89725  18.89726 582.83017  1      200
+siesta:     18.89725  18.89726 100.91142  1      201
+siesta:     18.89725  18.89726 222.00511  1      202
+siesta:     18.89725  18.89726 343.09881  1      203
+siesta:     18.89725  18.89726 464.19251  1      204
+siesta:     18.89725  18.89726 585.28621  1      205
+siesta:     18.89725  18.89726 103.50094  1      206
+siesta:     18.89725  18.89726 224.59464  1      207
+siesta:     18.89725  18.89726 345.68834  1      208
+siesta:     18.89725  18.89726 466.78204  1      209
+siesta:     18.89725  18.89726 587.87574  1      210
+siesta:     18.89725  18.89726 105.95699  1      211
+siesta:     18.89725  18.89726 227.05068  1      212
+siesta:     18.89725  18.89726 348.14438  1      213
+siesta:     18.89725  18.89726 469.23808  1      214
+siesta:     18.89725  18.89726 590.33178  1      215
+siesta:     18.89725  18.89726 108.54651  1      216
+siesta:     18.89725  18.89726 229.64021  1      217
+siesta:     18.89725  18.89726 350.73391  1      218
+siesta:     18.89725  18.89726 471.82761  1      219
+siesta:     18.89725  18.89726 592.92131  1      220
+siesta:     18.89725  18.89726 111.00256  1      221
+siesta:     18.89725  18.89726 232.09626  1      222
+siesta:     18.89725  18.89726 353.18995  1      223
+siesta:     18.89725  18.89726 474.28365  1      224
+siesta:     18.89725  18.89726 595.37735  1      225
+siesta:     18.89725  18.89726 113.59209  1      226
+siesta:     18.89725  18.89726 234.68578  1      227
+siesta:     18.89725  18.89726 355.77948  1      228
+siesta:     18.89725  18.89726 476.87318  1      229
+siesta:     18.89725  18.89726 597.96688  1      230
+siesta:     18.89725  18.89726 116.04813  1      231
+siesta:     18.89725  18.89726 237.14183  1      232
+siesta:     18.89725  18.89726 358.23552  1      233
+siesta:     18.89725  18.89726 479.32922  1      234
+siesta:     18.89725  18.89726 600.42292  1      235
+siesta:     18.89725  18.89726 118.63766  1      236
+siesta:     18.89725  18.89726 239.73135  1      237
+siesta:     18.89725  18.89726 360.82505  1      238
+siesta:     18.89725  18.89726 481.91875  1      239
+siesta:     18.89725  18.89726 603.01245  1      240
+
+siesta: System type = chain     
+
+initatomlists: Number of atoms, orbitals, and projectors:    240  3120  3840
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Non-Collinear-spin run           =     F
+redata: SpinPolarized (Up/Down) run      =     F
+redata: Number of spin components        =     1
+redata: Long output                      =     F
+redata: Number of Atomic Species         =        1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     NO
+redata: Mesh Cutoff                      =   100.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Max. number of SCF Iter          =      300
+redata: SCF convergence failure will abort job
+redata: Mixing is linear
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?        =     F
+redata: Discard 1st Pulay DM after  kick =     F
+redata: New DM Mixing Weight             =     0.0500
+redata: New DM Occupancy tolerance       = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000100
+redata: Require Energy convergence for SCF =     F
+redata: DM Energy tolerance for SCF      =     0.000100 eV
+redata: Require Harris convergence for SCF =     F
+redata: DM Harris energy tolerance for SCF =     0.000100 eV
+redata: Using Saved Data (generic)   =     F
+redata: Use continuation files for DM    =     T
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Divide and Conquer               =     T
+redata: Electronic Temperature           =     0.0019  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     Verlet MD run
+redata: Initial MD time step             =        1
+redata:   Final MD time step             =        1
+redata: Length of MD time step           =     1.0000  fs
+redata: Initial Temperature of MD run    =     0.0000  K
+redata: Perform a MD quench              =     F
+redata: ***********************************************************************
+Total number of electrons:   960.000000
+Total ionic charge:   960.000000
+
+* ProcessorY, Blocksize:    2  24
+
+ Kpoints in:            1 . Kpoints trimmed:            1
+
+siesta: k-grid: Number of k-points =     1
+siesta: k-grid: Cutoff (effective) =    10.000 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
+
+* Maximum dynamic memory allocated =     1 MB
+
+siesta:                 ==============================
+                            Begin MD step =      1
+                        ==============================
+
+outcell: Unit cell vectors (Ang):
+       20.000000    0.000000    0.000000
+        0.000000   20.000000    0.000000
+        0.000000    0.000000  320.400000
+
+outcell: Cell vector modules (Ang)   :   20.000000   20.000000  320.400000
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        : 128160.0000
+New_DM. Step:     1
+Initializing Density Matrix...
+
+InitMesh: MESH =   128 x   128 x  1944 =    31850496
+InitMesh: Mesh cutoff (required, used) =   100.000   101.744 Ry
+
+* Maximum dynamic memory allocated =   276 MB
+
+stepf: Fermi-Dirac step function
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =    -14225.310039
+siesta: Eions   =     61343.370237
+siesta: Ena     =     13755.780556
+siesta: Ekin    =     21260.581827
+siesta: Enl     =       675.148000
+siesta: DEna    =        -0.000036
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =    -12703.793049
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =    -38713.826753
+siesta: Etot    =    -38355.652940
+siesta: FreeEng =    -38355.652940
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1   -38713.8268   -38355.6529   -38355.6529  1.8511 -6.6210
+timer: Routine,Calls,Time,% = IterSCF        1     132.923  95.33
+elaps: Routine,Calls,Wall,% = IterSCF        1      16.635  95.18
+siesta:    2   -38679.7376   -38645.4829   -38645.4829  0.1220 -4.3576
+siesta:    3   -38677.8018   -38647.1453   -38647.1460  0.1110 -4.4216
+siesta:    4   -38676.1708   -38648.6364   -38648.6370  0.1012 -4.4806
+siesta:    5   -38674.7940   -38649.9767   -38649.9771  0.0924 -4.5349
+siesta:    6   -38673.6331   -38651.1876   -38651.1879  0.0846 -4.5848
+siesta:    7   -38672.6529   -38652.2843   -38652.2845  0.0776 -4.6308
+siesta:    8   -38671.8246   -38653.2806   -38653.2808  0.0712 -4.6732
+siesta:    9   -38671.1255   -38654.1897   -38654.1899  0.0653 -4.7122
+siesta:   10   -38670.5348   -38655.0211   -38655.0213  0.0599 -4.7481
+siesta:   11   -38670.0355   -38655.7838   -38655.7840  0.0550 -4.7812
+siesta:   12   -38669.6135   -38656.4856   -38656.4858  0.0504 -4.8117
+siesta:   13   -38669.2561   -38657.1323   -38657.1324  0.0463 -4.8397
+siesta:   14   -38668.9546   -38657.7311   -38657.7312  0.0425 -4.8656
+siesta:   15   -38668.6992   -38658.2858   -38658.2859  0.0390 -4.8894
+siesta:   16   -38668.4829   -38658.8007   -38658.8008  0.0358 -4.9113
+siesta:   17   -38668.2996   -38659.2797   -38659.2798  0.0329 -4.9316
+siesta:   18   -38668.1448   -38659.7268   -38659.7268  0.0302 -4.9502
+siesta:   19   -38668.0140   -38660.1446   -38660.1447  0.0277 -4.9673
+siesta:   20   -38667.9029   -38660.5352   -38660.5352  0.0255 -4.9831
+siesta:   21   -38667.8089   -38660.9011   -38660.9012  0.0234 -4.9977
+siesta:   22   -38667.7291   -38661.2443   -38661.2444  0.0215 -5.0111
+siesta:   23   -38667.6615   -38661.5667   -38661.5667  0.0197 -5.0235
+siesta:   24   -38667.6041   -38661.8697   -38661.8698  0.0181 -5.0348
+siesta:   25   -38667.5556   -38662.1551   -38662.1552  0.0166 -5.0453
+siesta:   26   -38667.5147   -38662.4243   -38662.4243  0.0153 -5.0550
+siesta:   27   -38667.4799   -38662.6779   -38662.6779  0.0140 -5.0639
+siesta:   28   -38667.4502   -38662.9170   -38662.9170  0.0129 -5.0721
+siesta:   29   -38667.4253   -38663.1431   -38663.1432  0.0118 -5.0797
+siesta:   30   -38667.4041   -38663.3566   -38663.3567  0.0109 -5.0866
+siesta:   31   -38667.3859   -38663.5584   -38663.5584  0.0100 -5.0930
+siesta:   32   -38667.3712   -38663.7499   -38663.7500  0.0091 -5.0990
+siesta:   33   -38667.3581   -38663.9304   -38663.9305  0.0084 -5.1044
+siesta:   34   -38667.3469   -38664.1013   -38664.1013  0.0077 -5.1094
+siesta:   35   -38667.3374   -38664.2632   -38664.2633  0.0071 -5.1140
+siesta:   36   -38667.3299   -38664.4171   -38664.4171  0.0065 -5.1183
+siesta:   37   -38667.3230   -38664.5623   -38664.5623  0.0059 -5.1222
+siesta:   38   -38667.3175   -38664.7004   -38664.7005  0.0054 -5.1258
+siesta:   39   -38667.3127   -38664.8311   -38664.8312  0.0050 -5.1292
+siesta:   40   -38667.3086   -38664.9552   -38664.9552  0.0046 -5.1322
+siesta:   41   -38667.3053   -38665.0729   -38665.0729  0.0042 -5.1350
+siesta:   42   -38667.3025   -38665.1845   -38665.1846  0.0038 -5.1376
+siesta:   43   -38667.3005   -38665.2909   -38665.2909  0.0035 -5.1400
+siesta:   44   -38667.2978   -38665.3907   -38665.3908  0.0032 -5.1422
+siesta:   45   -38667.2961   -38665.4862   -38665.4863  0.0030 -5.1443
+siesta:   46   -38667.2946   -38665.5767   -38665.5767  0.0027 -5.1461
+siesta:   47   -38667.2933   -38665.6625   -38665.6626  0.0025 -5.1479
+siesta:   48   -38667.2922   -38665.7440   -38665.7441  0.0023 -5.1495
+siesta:   49   -38667.2913   -38665.8215   -38665.8215  0.0021 -5.1509
+siesta:   50   -38667.2906   -38665.8950   -38665.8951  0.0019 -5.1523
+siesta:   51   -38667.2894   -38665.9642   -38665.9643  0.0018 -5.1535
+siesta:   52   -38667.2890   -38666.0307   -38666.0307  0.0017 -5.1546
+siesta:   53   -38667.2883   -38666.0934   -38666.0934  0.0015 -5.1557
+siesta:   54   -38667.2882   -38666.1534   -38666.1535  0.0014 -5.1567
+siesta:   55   -38667.2878   -38666.2101   -38666.2102  0.0013 -5.1576
+siesta:   56   -38667.2871   -38666.2636   -38666.2637  0.0012 -5.1584
+siesta:   57   -38667.2872   -38666.3151   -38666.3151  0.0012 -5.1591
+siesta:   58   -38667.2871   -38666.3638   -38666.3638  0.0011 -5.1598
+siesta:   59   -38667.2869   -38666.4100   -38666.4100  0.0010 -5.1605
+siesta:   60   -38667.2865   -38666.4536   -38666.4536  0.0009 -5.1611
+siesta:   61   -38667.2864   -38666.4953   -38666.4953  0.0009 -5.1616
+siesta:   62   -38667.2863   -38666.5348   -38666.5348  0.0008 -5.1621
+siesta:   63   -38667.2864   -38666.5725   -38666.5726  0.0008 -5.1626
+siesta:   64   -38667.2866   -38666.6085   -38666.6086  0.0007 -5.1630
+siesta:   65   -38667.2863   -38666.6423   -38666.6423  0.0007 -5.1634
+siesta:   66   -38667.2862   -38666.6744   -38666.6744  0.0006 -5.1637
+siesta:   67   -38667.2863   -38666.7051   -38666.7051  0.0006 -5.1640
+siesta:   68   -38667.2861   -38666.7340   -38666.7340  0.0005 -5.1643
+siesta:   69   -38667.2858   -38666.7613   -38666.7614  0.0005 -5.1646
+siesta:   70   -38667.2861   -38666.7879   -38666.7880  0.0005 -5.1649
+siesta:   71   -38667.2860   -38666.8127   -38666.8128  0.0004 -5.1651
+siesta:   72   -38667.2858   -38666.8362   -38666.8363  0.0004 -5.1653
+siesta:   73   -38667.2856   -38666.8586   -38666.8586  0.0004 -5.1655
+siesta:   74   -38667.2857   -38666.8800   -38666.8800  0.0004 -5.1657
+siesta:   75   -38667.2856   -38666.9002   -38666.9002  0.0003 -5.1659
+siesta:   76   -38667.2857   -38666.9195   -38666.9196  0.0003 -5.1660
+siesta:   77   -38667.2858   -38666.9380   -38666.9381  0.0003 -5.1662
+siesta:   78   -38667.2857   -38666.9553   -38666.9553  0.0003 -5.1663
+siesta:   79   -38667.2856   -38666.9717   -38666.9717  0.0003 -5.1664
+siesta:   80   -38667.2859   -38666.9877   -38666.9878  0.0002 -5.1665
+siesta:   81   -38667.2858   -38667.0026   -38667.0026  0.0002 -5.1666
+siesta:   82   -38667.2859   -38667.0168   -38667.0168  0.0002 -5.1667
+siesta:   83   -38667.2859   -38667.0303   -38667.0303  0.0002 -5.1668
+siesta:   84   -38667.2858   -38667.0430   -38667.0430  0.0002 -5.1669
+siesta:   85   -38667.2855   -38667.0547   -38667.0548  0.0002 -5.1670
+siesta:   86   -38667.2857   -38667.0665   -38667.0666  0.0002 -5.1670
+siesta:   87   -38667.2854   -38667.0772   -38667.0772  0.0001 -5.1671
+siesta:   88   -38667.2858   -38667.0880   -38667.0880  0.0001 -5.1671
+siesta:   89   -38667.2857   -38667.0978   -38667.0978  0.0001 -5.1672
+siesta:   90   -38667.2856   -38667.1071   -38667.1071  0.0001 -5.1672
+siesta:   91   -38667.2856   -38667.1161   -38667.1161  0.0001 -5.1673
+siesta:   92   -38667.2857   -38667.1246   -38667.1246  0.0001 -5.1673
+siesta:   93   -38667.2857   -38667.1327   -38667.1327  0.0001 -5.1674
+siesta:   94   -38667.2859   -38667.1405   -38667.1405  0.0001 -5.1674
+
+siesta: E_KS(eV) =           -38667.1475
+
+siesta: E_KS - E_eggbox =    -38667.1475
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -0.003568   -0.002767   -0.073047
+----------------------------------------
+   Max    0.966444
+   Res    0.044329    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.966444    constrained
+
+Stress-tensor-Voigt (kbar):        0.00        0.00        8.79        0.00        0.00        0.00
+(Free)E + p*V (eV/cell)   -38901.8293
+Target enthalpy (eV/cell)   -38667.1476
+
+siesta: Stress tensor (static) (eV/Ang**3):
+         0.000002    0.000000    0.000000
+         0.000000    0.000002    0.000000
+         0.000000    0.000000    0.005489
+
+siesta: Pressure (static):         -2.93387635  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+         0.000002    0.000000    0.000000
+         0.000000    0.000002    0.000000
+         0.000000    0.000000    0.005489
+
+siesta: Pressure (total):         -2.93387635  kBar
+
+siesta: Temp_ion =       0.000 K
+
+* Maximum dynamic memory allocated =   347 MB
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =    -12547.136530
+siesta: Eions   =     61343.370237
+siesta: Ena     =     13755.780556
+siesta: Ekin    =     24819.835524
+siesta: Enl     =     -2439.152528
+siesta: DEna    =      -564.743873
+siesta: DUscf   =        59.395869
+siesta: DUext   =         0.000000
+siesta: Exc     =    -12954.892839
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =    -38667.285866
+siesta: Etot    =    -38667.147528
+siesta: FreeEng =    -38667.147567
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =  -12547.136530
+siesta:       Kinetic =   24819.835524
+siesta:       Hartree =   80877.958265
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =  -12954.892839
+siesta:  Ion-electron = -184666.577951
+siesta:       Ion-ion =   53256.529474
+siesta:       Ekinion =       0.000000
+siesta:         Total =  -38667.147528
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1   -0.003046   -0.000006   -0.966444
+siesta:      2   -0.000011   -0.000008   -0.009891
+siesta:      3   -0.000012    0.000002   -0.002341
+siesta:      4   -0.000009   -0.000008    0.009909
+siesta:      5   -0.000016   -0.000004   -0.023584
+siesta:      6    0.001804   -0.000013    0.284567
+siesta:      7   -0.000014   -0.000015    0.004665
+siesta:      8   -0.000006   -0.000009    0.060857
+siesta:      9   -0.000014   -0.000007   -0.022531
+siesta:     10   -0.000009   -0.000006   -0.004887
+siesta:     11    0.000272   -0.000006    0.136154
+siesta:     12   -0.000047   -0.000029   -0.030850
+siesta:     13   -0.000014   -0.000008   -0.009924
+siesta:     14   -0.000020   -0.000004   -0.002331
+siesta:     15   -0.000019   -0.000013    0.009951
+siesta:     16   -0.000294   -0.000006   -0.090282
+siesta:     17   -0.000022   -0.000018    0.016460
+siesta:     18   -0.000013   -0.000015    0.004688
+siesta:     19   -0.000006   -0.000010    0.060846
+siesta:     20   -0.000015   -0.000009   -0.022567
+siesta:     21   -0.000049   -0.000012    0.066598
+siesta:     22   -0.000024   -0.000011   -0.023606
+siesta:     23   -0.000048   -0.000027   -0.030868
+siesta:     24   -0.000014   -0.000009   -0.009924
+siesta:     25   -0.000021   -0.000005   -0.002287
+siesta:     26    0.000008   -0.000001   -0.060165
+siesta:     27   -0.000013   -0.000008   -0.004866
+siesta:     28   -0.000021   -0.000016    0.016478
+siesta:     29   -0.000013   -0.000015    0.004688
+siesta:     30   -0.000007   -0.000009    0.060793
+siesta:     31   -0.000016   -0.000004    0.025325
+siesta:     32   -0.000021   -0.000013    0.009926
+siesta:     33   -0.000025   -0.000012   -0.023620
+siesta:     34   -0.000047   -0.000027   -0.030868
+siesta:     35   -0.000017   -0.000010   -0.009868
+siesta:     36   -0.000006   -0.000005    0.040540
+siesta:     37   -0.000014   -0.000008   -0.022538
+siesta:     38   -0.000012   -0.000006   -0.004851
+siesta:     39   -0.000021   -0.000017    0.016479
+siesta:     40   -0.000013   -0.000016    0.004617
+siesta:     41   -0.000013   -0.000008    0.005846
+siesta:     42   -0.000019   -0.000005   -0.002323
+siesta:     43   -0.000019   -0.000013    0.009913
+siesta:     44   -0.000026   -0.000012   -0.023620
+siesta:     45   -0.000048   -0.000027   -0.030791
+siesta:     46   -0.000012   -0.000015   -0.007430
+siesta:     47   -0.000005   -0.000010    0.060837
+siesta:     48   -0.000014   -0.000007   -0.022528
+siesta:     49   -0.000011   -0.000006   -0.004852
+siesta:     50   -0.000020   -0.000019    0.016388
+siesta:     51   -0.000045   -0.000025   -0.021153
+siesta:     52   -0.000016   -0.000010   -0.009916
+siesta:     53   -0.000020   -0.000004   -0.002332
+siesta:     54   -0.000019   -0.000013    0.009913
+siesta:     55   -0.000026   -0.000013   -0.023522
+siesta:     56   -0.000018   -0.000017    0.008781
+siesta:     57   -0.000014   -0.000015    0.004680
+siesta:     58   -0.000006   -0.000010    0.060848
+siesta:     59   -0.000015   -0.000007   -0.022528
+siesta:     60   -0.000009   -0.000007   -0.004974
+siesta:     61   -0.000018   -0.000010   -0.017307
+siesta:     62   -0.000047   -0.000028   -0.030864
+siesta:     63   -0.000014   -0.000009   -0.009924
+siesta:     64   -0.000018   -0.000004   -0.002332
+siesta:     65   -0.000020   -0.000013    0.010046
+siesta:     66   -0.000007   -0.000004   -0.009930
+siesta:     67   -0.000022   -0.000017    0.016475
+siesta:     68   -0.000013   -0.000015    0.004688
+siesta:     69   -0.000006   -0.000010    0.060846
+siesta:     70   -0.000014   -0.000008   -0.022682
+siesta:     71   -0.000017   -0.000008    0.014144
+siesta:     72   -0.000024   -0.000012   -0.023615
+siesta:     73   -0.000047   -0.000026   -0.030869
+siesta:     74   -0.000014   -0.000009   -0.009924
+siesta:     75   -0.000017   -0.000005   -0.002158
+siesta:     76   -0.000012   -0.000006   -0.025989
+siesta:     77   -0.000013   -0.000007   -0.004855
+siesta:     78   -0.000021   -0.000016    0.016478
+siesta:     79   -0.000013   -0.000015    0.004688
+siesta:     80   -0.000006   -0.000010    0.060644
+siesta:     81   -0.000021   -0.000010    0.000577
+siesta:     82   -0.000019   -0.000014    0.009917
+siesta:     83   -0.000025   -0.000012   -0.023619
+siesta:     84   -0.000047   -0.000027   -0.030868
+siesta:     85   -0.000014   -0.000007   -0.009693
+siesta:     86   -0.000006   -0.000008    0.058439
+siesta:     87   -0.000015   -0.000007   -0.022531
+siesta:     88   -0.000012   -0.000005   -0.004851
+siesta:     89   -0.000021   -0.000018    0.016477
+siesta:     90   -0.000014   -0.000015    0.004414
+siesta:     91   -0.000016   -0.000009   -0.007880
+siesta:     92   -0.000020   -0.000005   -0.002329
+siesta:     93   -0.000019   -0.000012    0.009913
+siesta:     94   -0.000025   -0.000012   -0.023619
+siesta:     95   -0.000046   -0.000028   -0.030555
+siesta:     96   -0.000017   -0.000013    0.002986
+siesta:     97   -0.000006   -0.000009    0.060844
+siesta:     98   -0.000014   -0.000007   -0.022528
+siesta:     99   -0.000012   -0.000006   -0.004852
+siesta:    100   -0.000017   -0.000017    0.016114
+siesta:    101   -0.000045   -0.000030   -0.029417
+siesta:    102   -0.000016   -0.000009   -0.009922
+siesta:    103   -0.000020   -0.000004   -0.002332
+siesta:    104   -0.000019   -0.000014    0.009914
+siesta:    105   -0.000023   -0.000010   -0.023202
+siesta:    106   -0.000018   -0.000021    0.015256
+siesta:    107   -0.000014   -0.000015    0.004686
+siesta:    108   -0.000006   -0.000010    0.060848
+siesta:    109   -0.000014   -0.000007   -0.022529
+siesta:    110   -0.000011   -0.000006   -0.005341
+siesta:    111   -0.000026   -0.000013   -0.022567
+siesta:    112   -0.000046   -0.000028   -0.030869
+siesta:    113   -0.000014   -0.000009   -0.009924
+siesta:    114   -0.000019   -0.000004   -0.002330
+siesta:    115   -0.000019   -0.000008    0.010471
+siesta:    116   -0.000014   -0.000009   -0.005746
+siesta:    117   -0.000021   -0.000017    0.016478
+siesta:    118   -0.000013   -0.000015    0.004688
+siesta:    119   -0.000006   -0.000010    0.060844
+siesta:    120   -0.000015   -0.000005   -0.023192
+siesta:    121   -0.000019   -0.000010    0.010674
+siesta:    122   -0.000024   -0.000012   -0.023619
+siesta:    123   -0.000047   -0.000027   -0.030869
+siesta:    124   -0.000015   -0.000009   -0.009923
+siesta:    125   -0.000015   -0.000006   -0.001568
+siesta:    126   -0.000012   -0.000008   -0.023182
+siesta:    127   -0.000013   -0.000008   -0.004852
+siesta:    128   -0.000021   -0.000016    0.016479
+siesta:    129   -0.000013   -0.000015    0.004687
+siesta:    130   -0.000008   -0.000011    0.059950
+siesta:    131   -0.000018   -0.000005   -0.001768
+siesta:    132   -0.000019   -0.000012    0.009915
+siesta:    133   -0.000024   -0.000011   -0.023620
+siesta:    134   -0.000047   -0.000028   -0.030867
+siesta:    135   -0.000016   -0.000005   -0.008877
+siesta:    136   -0.000005   -0.000010    0.060365
+siesta:    137   -0.000014   -0.000007   -0.022527
+siesta:    138   -0.000013   -0.000008   -0.004852
+siesta:    139   -0.000021   -0.000015    0.016476
+siesta:    140   -0.000017   -0.000013    0.003445
+siesta:    141   -0.000014   -0.000004   -0.009509
+siesta:    142   -0.000020   -0.000004   -0.002331
+siesta:    143   -0.000019   -0.000012    0.009913
+siesta:    144   -0.000025   -0.000010   -0.023618
+siesta:    145   -0.000049   -0.000024   -0.029417
+siesta:    146   -0.000015   -0.000015    0.004327
+siesta:    147   -0.000004   -0.000010    0.060846
+siesta:    148   -0.000013   -0.000006   -0.022527
+siesta:    149   -0.000013   -0.000006   -0.004855
+siesta:    150   -0.000021   -0.000020    0.014743
+siesta:    151   -0.000047   -0.000026   -0.030556
+siesta:    152   -0.000014   -0.000008   -0.009923
+siesta:    153   -0.000020   -0.000004   -0.002331
+siesta:    154   -0.000019   -0.000014    0.009916
+siesta:    155   -0.000026   -0.000014   -0.021579
+siesta:    156   -0.000018   -0.000019    0.016212
+siesta:    157   -0.000013   -0.000014    0.004687
+siesta:    158   -0.000006   -0.000010    0.060847
+siesta:    159   -0.000014   -0.000006   -0.022532
+siesta:    160   -0.000008   -0.000006   -0.007307
+siesta:    161   -0.000027   -0.000017   -0.023387
+siesta:    162   -0.000047   -0.000027   -0.030871
+siesta:    163   -0.000014   -0.000009   -0.009924
+siesta:    164   -0.000018   -0.000003   -0.002329
+siesta:    165   -0.000015   -0.000010    0.012815
+siesta:    166   -0.000008   -0.000008   -0.005055
+siesta:    167   -0.000022   -0.000017    0.016478
+siesta:    168   -0.000013   -0.000015    0.004689
+siesta:    169   -0.000007   -0.000010    0.060841
+siesta:    170   -0.000014   -0.000008   -0.026053
+siesta:    171   -0.000021   -0.000012    0.010089
+siesta:    172   -0.000025   -0.000012   -0.023620
+siesta:    173   -0.000048   -0.000027   -0.030870
+siesta:    174   -0.000016   -0.000011   -0.009919
+siesta:    175   -0.000016   -0.000004    0.001878
+siesta:    176   -0.000015   -0.000006   -0.022679
+siesta:    177   -0.000012   -0.000008   -0.004851
+siesta:    178   -0.000020   -0.000016    0.016479
+siesta:    179   -0.000013   -0.000015    0.004682
+siesta:    180   -0.000008   -0.000006    0.055673
+siesta:    181   -0.000019   -0.000006   -0.002200
+siesta:    182   -0.000019   -0.000012    0.009914
+siesta:    183   -0.000024   -0.000011   -0.023620
+siesta:    184   -0.000048   -0.000029   -0.030865
+siesta:    185   -0.000016   -0.000004   -0.003643
+siesta:    186   -0.000009   -0.000009    0.060731
+siesta:    187   -0.000014   -0.000007   -0.022527
+siesta:    188   -0.000012   -0.000005   -0.004851
+siesta:    189   -0.000021   -0.000018    0.016472
+siesta:    190   -0.000019   -0.000017   -0.003168
+siesta:    191   -0.000017   -0.000009   -0.009825
+siesta:    192   -0.000020   -0.000004   -0.002331
+siesta:    193   -0.000019   -0.000013    0.009913
+siesta:    194   -0.000024   -0.000011   -0.023613
+siesta:    195   -0.000048   -0.000027   -0.021197
+siesta:    196   -0.000015   -0.000014    0.004600
+siesta:    197   -0.000005   -0.000010    0.060846
+siesta:    198   -0.000013   -0.000007   -0.022529
+siesta:    199   -0.000012   -0.000006   -0.004861
+siesta:    200   -0.000010   -0.000018    0.004066
+siesta:    201   -0.000049   -0.000028   -0.030793
+siesta:    202   -0.000014   -0.000009   -0.009924
+siesta:    203   -0.000020   -0.000004   -0.002331
+siesta:    204   -0.000020   -0.000013    0.009924
+siesta:    205   -0.000019   -0.000011   -0.007903
+siesta:    206   -0.000022   -0.000017    0.016411
+siesta:    207   -0.000013   -0.000015    0.004688
+siesta:    208   -0.000006   -0.000010    0.060846
+siesta:    209   -0.000015   -0.000008   -0.022538
+siesta:    210   -0.000009   -0.000007   -0.025715
+siesta:    211   -0.000025   -0.000012   -0.023561
+siesta:    212   -0.000046   -0.000027   -0.030870
+siesta:    213   -0.000014   -0.000009   -0.009925
+siesta:    214   -0.000020   -0.000003   -0.002321
+siesta:    215   -0.000024   -0.000015    0.037448
+siesta:    216   -0.000012   -0.000006   -0.004904
+siesta:    217   -0.000020   -0.000017    0.016479
+siesta:    218   -0.000013   -0.000014    0.004688
+siesta:    219   -0.000006   -0.000009    0.060832
+siesta:    220   -0.000013   -0.000009   -0.061539
+siesta:    221   -0.000020   -0.000012    0.009960
+siesta:    222   -0.000025   -0.000012   -0.023620
+siesta:    223   -0.000046   -0.000027   -0.030868
+siesta:    224   -0.000017   -0.000011   -0.009910
+siesta:    225   -0.000039   -0.000006    0.053920
+siesta:    226   -0.000013   -0.000007   -0.022567
+siesta:    227   -0.000011   -0.000006   -0.004851
+siesta:    228   -0.000021   -0.000015    0.016478
+siesta:    229   -0.000013   -0.000014    0.004668
+siesta:    230   -0.000201   -0.000004   -0.029060
+siesta:    231   -0.000018   -0.000007   -0.002297
+siesta:    232   -0.000018   -0.000012    0.009913
+siesta:    233   -0.000026   -0.000010   -0.023626
+siesta:    234   -0.000048   -0.000025   -0.030853
+siesta:    235    0.000329   -0.000009    0.147142
+siesta:    236    0.000002   -0.000003    0.060813
+siesta:    237   -0.000009   -0.000003   -0.022533
+siesta:    238   -0.000004   -0.000005   -0.004854
+siesta:    239   -0.000009   -0.000005    0.016448
+siesta:    240    0.001957   -0.000002    0.442389
+siesta: ----------------------------------------
+siesta:    Tot   -0.003568   -0.002767   -0.073047
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:     0.000002    0.000000    0.000000
+siesta:     0.000000    0.000002    0.000000
+siesta:     0.000000    0.000000    0.005489
+
+siesta: Cell volume =     128160.000000 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:          -0.00001994         -0.00002515  Ry/Bohr**3
+siesta:          -0.00183116         -0.00230909  eV/Ang**3
+siesta:          -2.93387635         -3.69960402  kBar
+(Free)E+ p_basis*V_orbitals  =      -38564.688835
+(Free)Eharris+ p_basis*V_orbitals  =      -38564.834230
+
+siesta: Electric dipole (a.u.)  =    0.000001    0.000003    0.000000
+siesta: Electric dipole (Debye) =    0.000003    0.000007    0.000000
+
+* Maximum dynamic memory allocated : Node    0 =   345 MB
+* Maximum dynamic memory allocated : Node    1 =   345 MB
+* Maximum dynamic memory allocated : Node    2 =   342 MB
+* Maximum dynamic memory allocated : Node    3 =   342 MB
+* Maximum dynamic memory allocated : Node    4 =   347 MB
+* Maximum dynamic memory allocated : Node    5 =   347 MB
+* Maximum dynamic memory allocated : Node    6 =   346 MB
+* Maximum dynamic memory allocated : Node    7 =   346 MB
+
+* Maximum memory occured during redistribXZ                   
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1    8251.766    8251.766   100.00
+timer:  Setup             1       4.271       4.271     0.05
+timer:  bands             1       0.026       0.026     0.00
+timer:  writewave         1       0.080       0.080     0.00
+timer:  KSV_init          1       0.015       0.015     0.00
+timer:  IterMD            1    8247.113    8247.113    99.94
+timer:  hsparse           1       0.063       0.063     0.00
+timer:  overlap           1       1.930       1.930     0.02
+timer:  IterSCF          94      87.112    8188.489    99.23
+timer:  kinefsm           2       1.082       2.163     0.03
+timer:  nlefsm            2       5.290      10.579     0.13
+timer:  DHSCF            95      34.942    3319.526    40.23
+timer:  DHSCF1            1       4.666       4.666     0.06
+timer:  DHSCF2            1      31.488      31.488     0.38
+timer:  REORD           762       0.094      71.304     0.86
+timer:  POISON           96      16.541    1587.927    19.24
+timer:  DHSCF3           95      34.133    3242.635    39.30
+timer:  rhoofd           95       5.256     499.332     6.05
+timer:  cellXC           95       5.632     535.074     6.48
+timer:  vmat             95       3.381     321.239     3.89
+timer:  MolMec            2       0.001       0.001     0.00
+timer:  diagon           94      51.677    4857.679    58.87
+timer:  r-eigvec         94      50.907    4785.287    57.99
+timer:  r-buildHS        94       0.115      10.793     0.13
+timer:  rdiag            94      50.792    4774.488    57.86
+timer:  rdiag1           94       1.813     170.451     2.07
+timer:  rdiag2           94       7.600     714.354     8.66
+timer:  rdiag3           94      36.300    3412.211    41.35
+timer:  rdiag4           94       4.409     414.410     5.02
+timer:  r-buildD         94       0.754      70.907     0.86
+timer:  DHSCF4            1      16.654      16.654     0.20
+timer:  dfscf             1      15.108      15.108     0.18
+timer:  overfsm           1       0.323       0.323     0.00
+timer:  optical           1       0.331       0.331     0.00
+  
+
+elaps: ELAPSED times:
+elaps:  Routine       Calls   Time/call    Tot.time        %
+elaps:  siesta            1    1031.840    1031.840   100.00
+elaps:  Setup             1       0.561       0.561     0.05
+elaps:  bands             1       0.003       0.003     0.00
+elaps:  writewave         1       0.011       0.011     0.00
+elaps:  KSV_init          1       0.002       0.002     0.00
+elaps:  IterMD            1    1031.229    1031.229    99.94
+elaps:  hsparse           1       0.008       0.008     0.00
+elaps:  overlap           1       0.244       0.244     0.02
+elaps:  IterSCF          94      10.893    1023.922    99.23
+elaps:  kinefsm           2       0.137       0.275     0.03
+elaps:  nlefsm            2       0.675       1.350     0.13
+elaps:  DHSCF            95       4.368     414.919    40.21
+elaps:  DHSCF1            1       0.572       0.572     0.06
+elaps:  DHSCF2            1       3.946       3.946     0.38
+elaps:  REORD           762       0.011       8.751     0.85
+elaps:  POISON           96       2.066     198.372    19.23
+elaps:  DHSCF3           95       4.267     405.402    39.29
+elaps:  rhoofd           95       0.635      60.342     5.85
+elaps:  cellXC           95       0.705      66.941     6.49
+elaps:  vmat             95       0.422      40.117     3.89
+elaps:  MolMec            2       0.000       0.000     0.00
+elaps:  diagon           94       6.460     607.286    58.85
+elaps:  r-eigvec         94       6.363     598.151    57.97
+elaps:  r-buildHS        94       0.014       1.352     0.13
+elaps:  rdiag            94       6.349     596.799    57.84
+elaps:  rdiag1           94       0.227      21.370     2.07
+elaps:  rdiag2           94       0.950      89.305     8.65
+elaps:  rdiag3           94       4.538     426.604    41.34
+elaps:  rdiag4           94       0.550      51.708     5.01
+elaps:  r-buildD         94       0.095       8.939     0.87
+elaps:  DHSCF4            1       2.002       2.002     0.19
+elaps:  dfscf             1       1.813       1.813     0.18
+elaps:  overfsm           1       0.042       0.042     0.00
+elaps:  optical           1       0.002       0.002     0.00
+  
+>> End of run:  24-APR-2019  18:06:58

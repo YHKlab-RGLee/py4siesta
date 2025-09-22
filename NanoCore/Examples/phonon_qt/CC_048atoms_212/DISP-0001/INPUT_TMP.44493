@@ -1,0 +1,48 @@
+#(1) General system descriptors
+SystemName       cc_strain   # Descriptive name of the system
+SystemLabel      cc_strain   # Short name for naming files
+%include STRUCT.fdf
+%include KPT.fdf
+%include BASIS.fdf
+#(4) DFT, Grid, SCF
+XC.functional         LDA           # LDA or GGA (default = LDA)
+XC.authors            CA            # CA (Ceperley-Aldr) = PZ
+MeshCutoff            200.0 Ry      # Default: 50.0 Ry ~ 0.444 Bohr
+MaxSCFIterations      200           # Default: 50
+DM.MixingWeight       0.10          # Default: 0.25
+DM.NumberPulay        3             # Default: 0
+DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2
+DM.Tolerance          1.d-6         # Default: 1.d-4
+NeglNonOverlapInt     F             # Default: F
+#(5) Eigenvalue problem: order-N or diagonalization
+SolutionMethod        Diagon        # Default: OrderN/Diagon for >/< 100 atoms
+ElectronicTemperature 300.0 K       # Default: 300.0 K
+#(6) Molecular dynamics and relaxations
+#MD.TypeOfRun          CG            # Type of dynamics:
+                                    #   - CG
+                                    #   - Verlet
+                                    #   - Nose
+                                    #   - ParrinelloRahman
+                                    #   - NoseParrinelloRahman
+                                    #   - Anneal
+                                    #   - FC
+                                    #   - Phonon
+#MD.VariableCell        F
+#MD.NumCGsteps          200           # Default: 0
+#MD.MaxCGDispl          0.1 Ang       # Default: 0.2 Bohr
+#MD.MaxForceTol         0.001 eV/Ang   # Default: 0.04 eV/Ang
+#MD.MaxStressTol        1.0 GPa       # Default: 1.0 GPa
+#(9) Output options
+#WriteCoorInitial      T      # SystemLabel.out
+#WriteKpoints          T      # SystemLabel.out
+#WriteEigenvalues      T      # SystemLabel.out [otherwise ~.EIG]
+#WriteKbands           T      # SystemLabel.out, band structure
+#WriteBands            T      # SystemLabel.bands, band structure
+#WriteMDXmol           T      # SystemLabel.ANI
+#AllocReportLevel      2      # SystemLabel.alloc, Default: 0
+#(10) Options for saving/reading information
+#SaveHS                F      # SystemLabel.HS
+#SaveRho               F      # SystemLabel.RHO
+#SaveDeltaRho          F      # SystemLabel.DRHO
+#SaveElectrostaticPotential F # SystemLabel.VH
+#SaveTotalPotential    F      # SystemLabel.VT

@@ -1,0 +1,5 @@
+%block kgrid_Monkhorst_Pack
+   15  0    0   0.0
+   0   15   0   0.0
+   0   0   15    0.0
+%endblock kgrid_Monkhorst_Pack

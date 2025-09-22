@@ -1,0 +1,134 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=12    # Cores per node
+#SBATCH --partition=X2      # Queue Name
+##
+#SBATCH --job-name=q 
+#SBATCH --time=90-12:34          # Runtime: Day-HH:MM
+#SBATCH -o sms.%N.%j.out         # STDOUT 
+#SBATCH -e sms.%N.%j.err         # STDERR
+##
+##SBATCH --mail-type=END,FAIL            # mail if job ends or fails.
+##SBATCH --mail-user=email@kaist.ac.kr   # e-mail address
+
+
+export OMP_NUM_THREADS=1
+TS_BIN="NONE"; TBT_BIN="NONE"
+
+# slurm: siesta *** Must define INP_DIR ***
+# To use current dir, set INP_DIR="local", OUT_DIR="local"
+
+INP_DIR="input"
+OUT_DIR="OUT"
+
+RUN_FDF="RUN.fdf"
+
+#RUNBIN="$HOME/00.Development/0.GitHub/1.MSDFT/Local/ms-dft/Obj/transiesta"
+RUNBIN="$HOME/opt/siesta-4.1-b4_MS-DFT_ver3/Obj_fixed_rho/transiesta"
+#RUNBIN="$HOME/bin/msdft_exec/metagga_0.3v"
+#Remove scratch (YES/NO)
+RMSCRATCH="YES"
+
+#-------------------------------------------
+# setup. check backup files.
+#-------------------------------------------
+
+NPROCS="${SLURM_NTASKS}"
+basedir="${SLURM_SUBMIT_DIR}"
+runlog="cal.node"
+
+cd ${basedir}
+rm -f cal.* host.* job.* nodelist xpbs.* stdout.txt nlist_tmp
+
+if [ "$INP_DIR" == "local" ] || [ "$INP_DIR" == "LOCAL" ]; then 
+  rundir="${basedir}"
+  runlog="cal.host"
+else
+  if [ ! -d ${INP_DIR} ]; then
+     echo "> Cannot find \"${INP_DIR}\" directory..." > ${runlog}_terminated
+     exit 0
+  fi
+
+  # make rundir & nodelist
+  jobid="siesta_`echo ${SLURM_JOB_ID} | cut -d "." -f1`_`date +%H%M%S`"
+  rundir="/scratch/`whoami`/${jobid}"
+
+  snodes="$SLURM_JOB_NODELIST"
+  msg=`echo "${snodes//[n,\[\]]/ }"`
+
+  touch nodelist
+  for w in ${msg}; do
+    lst=`echo "${w/-/ }"`
+    flist=`echo $lst | awk '{print $1}'`
+    elist=`echo $lst | awk '{print $2}'`
+
+    jnode=`echo "n${flist}.hpc"`
+    echo "${jnode}" >> nodelist
+
+    if [ "$elist" != "" ]; then
+      ndif=`echo $(($elist-$flist))`
+      for (( p=1; p<=${ndif}; p++ )); do
+        addn=`expr ${flist} + ${p}`
+        nlst=`printf "%03d" ${addn}`
+        jnode=`echo "n${nlst}.hpc"`
+        echo "${jnode}" >> nodelist
+      done
+    fi
+  done
+
+  # copy input data to nodes:
+  NLIST=`cat nodelist`
+  for n in ${NLIST}; do
+      ssh -Y ${n} "rm -rf ${rundir}; mkdir -p ${rundir}"
+      scp -r ${basedir}/${INP_DIR}/*  ${n}:${rundir}/
+  done
+fi
+
+touch stdout.txt 
+
+# run siesta/smeagol
+#--------------------------------------------------
+
+hostname > ${runlog}
+echo "${rundir}" >> ${runlog}
+echo "${SLURM_JOB_ID}" >> ${runlog}
+echo "* SIESTA time: `date`" >> ${runlog}
+
+cd ${rundir}
+
+   mpirun -np $NPROCS ${MPIARG} -env I_MPI_FABRICS="shm:tcp"  ${RUNBIN}  < ${RUN_FDF} > stdout.txt
+
+   OUTSTR=`tail -1 stdout.txt | awk '{printf $2}'`
+#--------------------------------------------------
+
+# backup
+if [ "${INP_DIR}" != "local" ] && [ "${INP_DIR}" != "LOCAL" ]; then
+  cd ${basedir}
+
+  if [ -d ${OUT_DIR} ]; then
+  rm -rf ${OUT_DIR}.OLD; mv ${OUT_DIR} ${OUT_DIR}.OLD
+  fi
+  mkdir ${OUT_DIR} 
+
+  cp -r ${rundir}/*    ${basedir}/${OUT_DIR}/
+  cp ${OUT_DIR}/stdout.txt  ./
+
+  # remove scratch
+  if [ "${RMSCRATCH}" == "YES" ] || [ "${RMSCRATCH}" == "yes" ]; then
+    for p in ${NLIST}; do
+      ssh -Y ${p} "rm -rf ${rundir}"
+    done
+    echo "* ........... removed scratch .........." >> ${runlog}
+#    rm -f nodelist
+  fi
+fi
+
+# ending messages
+if [ "$OUTSTR" == "End" ] || [ "$OUTSTR" == "completed" ]; then
+  echo "* End   time: `date`" >> ${runlog}
+  mv ${runlog} ${runlog}_done
+else
+  echo "* JOB TERMINATED: `date`" >> ${runlog}
+  mv ${runlog} ${runlog}_terminated
+fi
+###### eof ######.

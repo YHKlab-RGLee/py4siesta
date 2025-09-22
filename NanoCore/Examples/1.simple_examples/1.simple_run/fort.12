@@ -1,0 +1,45 @@
+%YAML 1.2
+---
+
+siesta:
+  version: "v4.1-b4"
+  arch: "x86_64-unknown-linux-gnu--unknown"
+  compiler: "ifort (IFORT) 18.0.5 20180823"
+  fflags: "mpiifort -g -O2 -fPIC -xSSE4.2 -fp-model source -traceback -debug extended"
+  fppflags: "-DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DMPI"
+  libs: "-Wl,--start-group /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_scalapack_lp664.a /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_intel_lp64.a /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_core.a /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_sequential.a /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_blacs_intelmpi_lp64.a -Wl,--end-group -lpthread   /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_blas95_lp64.a -Wl,--start-group /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_intel_lp64.a /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_sequential.a /opt/intel/MKL/2018.5.274/lib/intel64/libmkl_core.a -Wl,--end-group"
+  build: "mpi"
+  openmp: "no"
+  gemm3m: "no"
+  netcdf: "no"
+  netcdf4: "no"
+  netcdf4_mpi: "no"
+  metis: "no"
+  chess: "no"
+  elpa: "no"
+  flook: "no"
+  pexsi: "no"
+
+energies:
+  Ebs:          -0.15710455E+03
+  Eions:           0.75143652E+03
+  Ena:           0.16185505E+03
+  Ekin:           0.32240589E+03
+  Enl:          -0.32802235E+02
+  Eso:           0.00000000E+00
+  Eldau:           0.00000000E+00
+  DEna:          -0.12316095E+02
+  DUscf:           0.10694923E+01
+  DUext:           0.00000000E+00
+  Enegf:           0.00000000E+00
+  Exc:          -0.16555713E+03
+  Ecorrec:           0.00000000E+00
+  Emadel:           0.00000000E+00
+  Emeta:           0.00000000E+00
+  Emolmec:           0.00000000E+00
+  Ekinion:           0.00000000E+00
+  Eharris:          -0.47678155E+03
+  Etot:          -0.47678155E+03
+  FreeEng:          -0.47678155E+03
+
+...

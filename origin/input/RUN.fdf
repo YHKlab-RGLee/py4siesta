@@ -1,0 +1,143 @@
+#(1) General system descriptors
+
+SystemName            diamond  # Descriptive name of the system
+SystemLabel           diamond  # Short name for naming files
+%include STRUCT.fdf
+%include KPT.fdf
+%include BASIS.fdf
+#%include TS.fdf # for transiesta calculation
+
+#(4) DFT, Grid, SCF
+
+XC.functional         LDA           # LDA or GGA (default = LDA)
+XC.authors            CA           # CA (Ceperley-Aldr) = PZ
+                                    #    (Perdew-Zunger) - LDA - Default
+                                    # PW92 (Perdew-Wang-92) - LDA
+                                    # PBE (Perdew-Burke-Ernzerhof) - GGA
+MeshCutoff            500.00 Ry     # Default: 50.0 Ry ~ 0.444 Bohr
+                                    #         100.0 Ry ~ 0.314 Bohr
+MaxSCFIterations      500           # Default: 50
+DM.MixingWeight       0.25          # Default: 0.25
+DM.NumberPulay        20            # Default: 0
+DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2
+DM.Tolerance          1.d-4         # Default: 1.d-4
+DM.UseSaveDM          .true.        # because of the bug
+SCFMustConverge       .true.
+NeglNonOverlapInt     F             # Default: F
+#DM.MixSCF1            T
+#TS.CalcGF             F             # Default: T
+
+#(5) Eigenvalue problem: order-N or diagonalization
+
+SolutionMethod        Diagon        # or Transiesta
+ElectronicTemperature 300.0 K       # Default: 300.0 K
+
+#User.Basis T
+
+#(6) Molecular dynamics and relaxations
+
+MD.TypeOfRun          CG            # Type of dynamics:
+MD.VariableCell       F 
+MD.NumCGsteps         300         # 0 for single-point / 100 for gopt
+MD.MaxCGDispl         0.2 Bohr      # Default: 0.2 Bohr
+MD.MaxForceTol        0.01  eV/Ang   # Default: 0.04 eV/Ang
+MD.MaxStressTol       0.1 GPa       # Default: 1.0 GPa
+#MD.PreconditionVariableCell 5.0 Ang
+#MD.TargetPressure 0.0 Gpa
+
+#LDOS option
+#%block LocalDensityOfStates
+# -4.7800 -4.6800 eV
+#%endblock LocalDensityOfStates
+
+# Geometry Constraints
+#%block Geometry.Constraints
+#	cell-angle alpha beta gamma
+#	cell-vector C
+#	stress 4 5 6
+#%endblock Geometry.Constraints
+
+#%block GeometryConstraints
+#	atom [1 -- 208, 320 -- 527]
+#	cell-vector C
+#%endblock GeometryConstraints
+
+
+# Band Structure
+#Diag.ParallelOverK .true.
+#BandLinesScale pi/a
+#BandLinesScale ReciprocalLatticeVectors 
+#WFS.Write.For.Bands .true.
+#%block BandLines
+##  1    0.33193 0.342600 0.00000  
+#  71   0.00000 0.000000 0.00000  Z
+#  71   0.50000 0.000000 0.00000  Z
+#%endblock BandLines
+
+#%block MM.Potentials
+#   1 1 Grimme 7.255 2.684
+#   1 2 Grimme 3.244 2.343
+#   1 3 Grimme 26.344 3.058
+#   1 4 Grimme 11.471 2.794
+#   2 1 Grimme 3.244 2.343
+#   2 2 Grimme 1.451 2.002
+#   2 3 Grimme 11.781 2.717
+#   2 4 Grimme 5.130 2.453
+#   3 1 Grimme 26.344 3.058
+#   3 2 Grimme 11.781 2.717
+#   3 3 Grimme 95.661 3.432
+#   3 4 Grimme 41.653 3.168
+#   4 1 Grimme 11.471 2.794
+#   4 2 Grimme 5.130 2.453
+#   4 3 Grimme 41.653 3.168
+#   4 4 Grimme 18.137 2.904
+#%endblock MM.Potentials
+#MM.Grimme.S6  0.75
+
+# LDOS option
+#%block LocalDensityOfStates
+#-0.05 0.05 eV                # Around E_F
+#%endblock LocalDensityOfStates
+# Check the output first, and find out where E_F is located.
+# Then, put small window around E_F above.
+
+#SlabDipoleCorrection .true.
+#SpinPolarized  .true.
+#%block DM.InitSpin
+#268 -1
+#269 -1
+#270 -1
+#271 -1
+#272 -1
+#256 1
+#257 1
+#258 1
+#259 1
+#260 1
+#%endblock DM.InitSpin
+
+#(9) Output options
+#WriteCoorInitial      T      # SystemLabel.out
+#WriteKpoints          T      # SystemLabel.out
+#WriteEigenvalues      T      # SystemLabel.out [otherwise ~.EIG]
+#WriteKbands           T      # SystemLabel.out, band structure
+#WriteBands            T      # SystemLabel.bands, band structure
+#WriteDM.NetCDF        T      # for Eigenchannel analysis later...
+#WriteDMHS.NetCDF      T      # for Eigenchannel analysis later...
+AllocReportLevel      0      # SystemLabel.alloc, Default: 0
+#WriteMullikenPop      1      # Mulliken population analysis,
+#Default : 0 ; 0=None, 1=atomic and orbital charges, 2=1+atomic overlap pop, 3=2+orbital overlap pop
+
+
+#(10) Options for saving/reading information
+
+#SaveHS                T      # SystemLabel.HS
+#SaveRho               T      # SystemLabel.RHO, rho2xsf(3D),macroave-charge dendity(1D)
+#SaveDeltaRho          T      # SystemLabel.DRHO
+#SaveElectrostaticPotential T # SystemLabel.VH , macroave-potential
+#SaveNeutralAtomPotential T
+#SaveTotalPotential    T      # SystemLabel.VT
+WriteMullikenPop	1
+WriteMDXmol           T      # SystemLabel.ANI, optimization
+WriteCoorXmol        .true.  # SystemLavel.xyz
+#WriteCoorStep        .true.  # SystemLabel.XV , rho2xsf

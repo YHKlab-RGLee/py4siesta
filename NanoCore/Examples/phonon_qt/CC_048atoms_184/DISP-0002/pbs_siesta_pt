@@ -1,0 +1,96 @@
+#!/bin/sh
+#PBS -l walltime=1000:00:00
+#PBS -l nodes=1:WEST:ppn=8
+#PBS -N cc_strain
+#PBS -o ./siesta.run.out
+#PBS -e ./siesta.run.err
+#PBS -j oe
+##PBS -l walltime=72:00:00
+
+
+export OMP_NUM_THREADS=1
+cd $PBS_O_WORKDIR
+
+
+MPIARG=""
+#MPIARG="-genv I_MPI_FABRICS=tmi"
+
+NPROCS=`wc -l < $PBS_NODEFILE`
+jobid="jhiskard_`date +%m%d_%H%M%S`"
+executable=/home/`whoami`/mybin/siesta3.2-O2-xSSE4.2-fPIC-fp-model_source-shared-intel.x
+atmdir=$PBS_O_WORKDIR
+basdir=$PBS_O_WORKDIR
+#/home/hana/2014_DNA+Au/3_Au+DNA_solvated-re/Au731_d10+dA_E_BB+sol
+#"$PBS_O_WORKDIR"
+rundir="/scratch/works/`whoami`/$jobid"
+#infofl="siesta.run_${job}"
+infofl="host.job"
+
+hostname > ${infofl}
+echo "${rundir}" >> ${infofl}
+echo "* Run  directory: ${rundir}" >> ${infofl}
+echo "* Start time: `date`" >> ${infofl}
+
+if [ -d ${rundir} ]; then
+rm -rf ${rundir}/*
+else
+mkdir -p ${rundir}
+fi
+
+cp -r ${atmdir}/*psf ${rundir}/
+cp -r ${basdir}/*.fdf  ${rundir}/
+#cp -r ${basdir}/*.psf  ${rundir}/
+
+
+# scratch(DO NOT MODIFY)
+#-----------------------
+NNODES="1"
+NLIST=`sed -n 1p $PBS_NODEFILE`
+echo "$NLIST" > nodelist
+
+if [ $NPROCS -gt 1 ]
+then 
+  for (( p=2; p<=$NPROCS; p++ ))
+  do
+  PBSLST=`sed -n ${p}p $PBS_NODEFILE`
+  if [ $PBSLST != $NLIST ]; then
+    echo "$PBSLST" >> nodelist
+    ssh -Y $PBSLST "rm -rf ${rundir}; mkdir -p ${rundir}"
+    scp -r ${rundir}/*  $PBSLST:${rundir}/
+    NNODES=$(($NNODES+1))
+    NLIST=$PBSLST
+  fi
+  done
+fi
+
+
+# run
+#-----------------------
+touch stdout.txt
+cd ${rundir}
+
+#EXEBIN=/home/jeelc/opt/bin/transiesta_3.2.x
+#EXEBIN=/home/jeelc/opt/bin/siesta_3.2.x
+
+mpirun -np $NPROCS $executable  < RUN.fdf > stdout.txt
+
+# backup
+#cp -r ${rundir}/stdout.txt  ${basdir}/
+#cp -r ${rundir}/*.xyz       ${basdir}/
+#cp -r ${rundir}/*.DM       ${basdir}/
+#cp -r ${rundir}/*.ANI       ${basdir}/
+cp -r ${rundir}/* ${basdir}/
+
+# remove scratch
+#-----------------------
+cd ${basdir}
+
+for (( p=1; p<=$NNODES; p++ ))
+do
+  PBSLST=`sed -n ${p}p nodelist`
+  ssh -Y $PBSLST "rm -rf ${rundir}"
+done
+#rm -f nodelist
+
+echo "* End   time: `date`" >> ${infofl}
+#eof.

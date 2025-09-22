@@ -1,0 +1,7 @@
+BandLinesScale    pi/a
+%block BandLines
+   1   0.5440   0.0000   0.0000
+  54   0.0000   0.0000   0.0000
+  47   0.4080   0.2356   0.0000
+  27   0.5440   0.0000   0.0000
+%endblock BandLines

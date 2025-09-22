@@ -1,0 +1,7 @@
+
+#(1) Basis definition
+
+PAO.BasisType    split
+PAO.BasisSize    DZP
+PAO.EnergyShift  100.000 meV
+PAO.SplitNorm    0.150
