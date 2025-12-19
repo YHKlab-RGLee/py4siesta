@@ -1,10 +1,58 @@
-import numpy as np
-import os, sys
-import glob
 import copy
+import os
+import shutil
+import subprocess
+from contextlib import contextmanager
+from pathlib import Path
+
 import matplotlib.pylab as plt
+import numpy as np
 from scipy.optimize import fminbound, leastsq
+
 from NanoCore import *
+
+
+@contextmanager
+def working_dir(path: Path):
+    """Temporarily change the working directory to ``path``.
+
+    The previous working directory is restored even if an exception occurs.
+    """
+
+    previous_cwd = Path.cwd()
+    target = Path(path)
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        os.chdir(target)
+        yield target
+    finally:
+        os.chdir(previous_cwd)
+
+
+def copy_contents(src: Path, dst: Path):
+    """Copy the contents of ``src`` into ``dst``."""
+
+    src = Path(src)
+    dst = Path(dst)
+    dst.mkdir(parents=True, exist_ok=True)
+    for item in src.iterdir():
+        target = dst / item.name
+        if item.is_dir():
+            shutil.copytree(item, target)
+        else:
+            shutil.copy2(item, target)
+
+
+def last_matching_line(path: Path, keyword: str):
+    """Return the last line in ``path`` containing ``keyword`` or ``None``."""
+
+    path = Path(path)
+    if not path.is_file():
+        return None
+
+    with path.open("r", errors="ignore") as file:
+        matching = [line for line in file if keyword in line]
+    return matching[-1] if matching else None
 
 
 def write_kpoint(kpoints):
@@ -20,99 +68,91 @@ def write_kpoint(kpoints):
     fileK.close()
         
 class siesta_eos():
-    
+
     def __init__(self):
-        os.chdir('origin')
-        os.chdir('input')
-        self.struct = s2.read_fdf('STRUCT.fdf')
-        os.chdir('..')
-        os.chdir('..')
+        self.root = Path(__file__).resolve().parent
+        self.origin_dir = self.root / 'origin'
+        self.struct = s2.read_fdf(self.origin_dir / 'input' / 'STRUCT.fdf')
     
     def kpoint_sampling(self, sym = 1, kpoints = [1,2,3]):
-        
+
         struct = self.struct
-        
-        os.system('mkdir 01.kpoint_sampling')
-        os.chdir('01.kpoint_sampling')
-        
-        for k in kpoints:            
-            if sym == 1:        
-                os.system('mkdir %d+%d+%d'%(k,k,k))
-                os.chdir('%d+%d+%d'%(k,k,k))
-                os.system('cp -r ../../origin/* .')
-                write_kpoint(kpoints = [k, k, k])
-                os.system('mv KPT.fdf input/.')
-            elif sym == 0:
-                os.system('mkdir %d+%d+%d'%(k[0],k[1],k[2]))
-                os.chdir('%d+%d+%d'%(k[0],k[1],k[2]))
-                os.system('cp -r ../../origin/* .')
-                write_kpoint(kpoints = k)
-                os.system('mv KPT.fdf input/.')
-            os.chdir('..')
-        os.chdir('..')
+
+        base_dir = self.root / '01.kpoint_sampling'
+
+        with working_dir(base_dir):
+            for k in kpoints:
+                if sym == 1:
+                    dirname = f"{k}+{k}+{k}"
+                    current_kpoints = [k, k, k]
+                else:
+                    dirname = f"{k[0]}+{k[1]}+{k[2]}"
+                    current_kpoints = k
+
+                case_dir = Path(dirname)
+                with working_dir(case_dir):
+                    copy_contents(self.origin_dir, Path.cwd())
+                    write_kpoint(kpoints=current_kpoints)
+                    shutil.move('KPT.fdf', Path('input') / 'KPT.fdf')
 
     def eos_bulk(self, ratio_range = np.linspace(0.99, 1.01, 11)):
-        
+
         struct = self.struct
         pos = [x._position for x in struct._atoms]
 
-        os.system('rm -r 02.volume_eos')
-        os.system('mkdir 02.volume_eos')
-        os.chdir('02.volume_eos')
+        base_dir = self.root / '02.volume_eos'
+        if base_dir.exists():
+            shutil.rmtree(base_dir)
+        base_dir.mkdir()
 
-        for ir in range(len(ratio_range)):
+        with working_dir(base_dir):
+            for ir, r in enumerate(ratio_range):
+                struct2 = copy.copy(struct)
+                atoms = struct2._atoms
+                natm = len(atoms)
 
-            struct2 = copy.copy(struct)
-            atoms = struct2._atoms
-            natm = len(atoms)         
-   
-            r = ratio_range[ir]
-            os.system('mkdir %02d-%4.3f'%(ir+1,r))
-            os.chdir('%02d-%4.3f'%(ir+1,r))
-            os.system('cp -r ../../origin/* .')
+                case_dir = Path(f"{ir+1:02d}-{r:4.3f}")
+                with working_dir(case_dir):
+                    copy_contents(self.origin_dir, Path.cwd())
 
-            for iatom in range(natm):
-                pos2 = Vector(r*pos[iatom])
-                struct2._atoms[iatom].set_position(pos2)
-            vector = copy.copy(struct._cell)
-            vector2 = r * vector
-            struct2._cell = vector2
-            s2.Siesta(struct2).write_struct()
-            os.system('mv STRUCT.fdf input/.')
-            os.chdir('..')
-        os.chdir('..')
+                    for iatom in range(natm):
+                        pos2 = Vector(r * pos[iatom])
+                        struct2._atoms[iatom].set_position(pos2)
+                    vector = copy.copy(struct._cell)
+                    vector2 = r * vector
+                    struct2._cell = vector2
+                    s2.Siesta(struct2).write_struct()
+                    shutil.move('STRUCT.fdf', Path('input') / 'STRUCT.fdf')
             
     def eos_slab(self, ratio_range = np.linspace(0.98, 1.02, 11)):
 
         struct = self.struct
         pos = [x._position for x in struct._atoms]
- 
-        os.system('rm -r 02.slab_eos')
-        os.system('mkdir 02.slab_eos')
-        os.chdir('02.slab_eos')
 
-        for ir in range(len(ratio_range)):
+        base_dir = self.root / '02.slab_eos'
+        if base_dir.exists():
+            shutil.rmtree(base_dir)
+        base_dir.mkdir()
 
-            struct2 = copy.copy(struct)
-            atoms = struct2._atoms
-            natm = len(atoms)
-            
-            r = ratio_range[ir]
-            
-            os.system('mkdir %02d-%4.3f'%(ir+1, ratio_range[ir]))
-            os.chdir('%02d-%4.3f'%(ir+1, ratio_range[ir]))
-            os.system('cp -r ../../origin/* .')
+        with working_dir(base_dir):
+            for ir, r in enumerate(ratio_range):
 
-            for iatom in range(natm):
-                pos2 = Vector(r*pos[iatom])
-                struct2._atoms[iatom].set_position(Vector(pos2))
-            vector = copy.copy(struct._cell)
-            vector[:,0:2] = r * vector[:,0:2]
-            struct2._cell = vector
-            s2.Siesta(struct2).write_struct()
-            os.system('mv STRUCT.fdf input/.')
-            os.chdir('..')
-        os.chdir('..')
+                struct2 = copy.copy(struct)
+                atoms = struct2._atoms
+                natm = len(atoms)
+
+                case_dir = Path(f"{ir+1:02d}-{r:4.3f}")
+                with working_dir(case_dir):
+                    copy_contents(self.origin_dir, Path.cwd())
+
+                    for iatom in range(natm):
+                        pos2 = Vector(r * pos[iatom])
+                        struct2._atoms[iatom].set_position(Vector(pos2))
+                    vector = copy.copy(struct._cell)
+                    vector[:,0:2] = r * vector[:,0:2]
+                    struct2._cell = vector
+                    s2.Siesta(struct2).write_struct()
+                    shutil.move('STRUCT.fdf', Path('input') / 'STRUCT.fdf')
 
 
     def image_layer(self, struct, displacement = np.array([0,0,0])):
@@ -153,31 +193,30 @@ class siesta_eos():
 
         struct = self.struct
         pos = [x._position for x in struct._atoms]
- 
-        os.system('rm -r 02.layer_eos')
-        os.system('mkdir 02.layer_eos')
-        os.chdir('02.layer_eos')
 
-        for ir in range(len(ratio_range)):
+        base_dir = self.root / '02.layer_eos'
+        if base_dir.exists():
+            shutil.rmtree(base_dir)
+        base_dir.mkdir()
 
-            struct2 = copy.copy(struct)
-            atoms = struct2._atoms
-            natm = len(atoms)
-            
-            r = ratio_range[ir]
-            disp = copy.copy(displacement * r)
-            
-            os.system('mkdir %02d-%5.4f'%(ir+1, disp))
-            os.chdir('%02d-%5.4f'%(ir+1, disp))
-            os.system('cp -r ../../origin/* .')
+        with working_dir(base_dir):
+            for ir, r in enumerate(ratio_range):
 
-            disp_vector = shift + np.array([0,0, disp])
-            struct3 = self.image_layer(struct2, disp_vector)
+                struct2 = copy.copy(struct)
+                atoms = struct2._atoms
+                natm = len(atoms)
 
-            s2.Siesta(struct3).write_struct()
-            os.system('mv STRUCT.fdf input/.')
-            os.chdir('..')
-        os.chdir('..')
+                disp = copy.copy(displacement * r)
+
+                case_dir = Path(f"{ir+1:02d}-{disp:5.4f}")
+                with working_dir(case_dir):
+                    copy_contents(self.origin_dir, Path.cwd())
+
+                    disp_vector = shift + np.array([0,0, disp])
+                    struct3 = self.image_layer(struct2, disp_vector)
+
+                    s2.Siesta(struct3).write_struct()
+                    shutil.move('STRUCT.fdf', Path('input') / 'STRUCT.fdf')
         
             
     def find_optimized_lattice(self, shift = np.array([0,0,0]), mode = 'Murnaghan'):
@@ -189,48 +228,52 @@ class siesta_eos():
         init_lattice = np.sqrt(np.dot(cell[0],cell[0]))
 
         if mode == 'Murnaghan':
-            os.chdir('02.volume_eos')
+            base_dir = self.root / '02.volume_eos'
         elif mode == 'Polynomial':
-            os.chdir('02.slab_eos')
+            base_dir = self.root / '02.slab_eos'
         elif mode == 'Layer':
-            os.chdir('02.layer_eos')
+            base_dir = self.root / '02.layer_eos'
+        else:
+            base_dir = self.root
 
-
-        files = sorted(glob.glob('*'))
+        if not base_dir.exists():
+            raise FileNotFoundError(f"{base_dir} does not exist")
 
         energy = []
         volume = []
         lattice = []
 
-        for f in files:
+        optimized_dir = base_dir / 'optimized_structure'
+        with working_dir(base_dir):
+            if optimized_dir.exists():
+                shutil.rmtree(optimized_dir)
 
-            if f == 'optimized_structure':
-                os.system('rm -r optimized_structure')
-            if os.path.isdir(f):
-                print(f)
-                os.chdir(f)
-                if os.path.isdir('OUT'):
-                    os.chdir('OUT')
-                    os.system('grep -a ' +'"siesta:         Total ="'+ ' stdout.txt | tail -n 1 >> dat')
-                    os.system('grep -a ' +'"outcell: Cell volume"' +' stdout.txt | tail -n 1 >> dat')
-                    os.system('grep -a ' +'"outcell: Cell vector modules"'+' stdout.txt | tail -n 1 >> dat')
+            for path in sorted(base_dir.iterdir()):
+                if not path.is_dir() or path.name == 'optimized_structure':
+                    continue
 
-                    f2 = open('dat', 'r')
-                    line = f2.readlines()
-                    energy.append(float(line[0].split()[-1]))
-                    volume.append(float(line[1].split()[-1]))
+                out_dir = path / 'OUT'
+                stdout_path = out_dir / 'stdout.txt'
 
-                    if mode == 'Layer':
-                        lattice.append(float(f.split('-')[-1]))
-                    else:
-                        lattice.append(float(line[2].split()[-3]))
+                if not stdout_path.is_file():
+                    continue
 
-                    f2.close()
-                    os.system('rm dat')
-                    os.chdir('..')
-                else:
-                    pass
-                os.chdir('..')
+                print(path.name)
+                energy_line = last_matching_line(stdout_path, "siesta:         Total =")
+                volume_line = last_matching_line(stdout_path, "outcell: Cell volume")
+                lattice_line = last_matching_line(stdout_path, "outcell: Cell vector modules")
+
+                if not energy_line or not volume_line:
+                    continue
+
+                energy.append(float(energy_line.split()[-1]))
+                volume.append(float(volume_line.split()[-1]))
+
+                if mode == 'Layer':
+                    lattice.append(float(path.name.split('-')[-1]))
+                elif lattice_line:
+                    lattice.append(float(lattice_line.split()[-3]))
+
         energy = np.array(energy, dtype = float)
         volume = np.array(volume, dtype = float)
         lattice = np.array(lattice, dtype = float)
@@ -329,38 +372,36 @@ class siesta_eos():
             plt.plot(lattice, energy, 'ro')
 
 
-        plt.plot(vfit, opt_func)
-        plt.savefig('eos_fitting.png')
+        with working_dir(base_dir):
+            plt.plot(vfit, opt_func)
+            plt.savefig('eos_fitting.png')
 
-        os.system('cp -r ../origin optimized_structure')
-        s2.Siesta(struct).write_struct()
-
-        os.system('mv STRUCT.fdf  optimized_structure/input/.')
-        os.chdir('..')
+            copy_contents(self.origin_dir, optimized_dir)
+            with working_dir(optimized_dir):
+                s2.Siesta(struct).write_struct()
+                shutil.move('STRUCT.fdf', Path('input') / 'STRUCT.fdf')
 
     def qsub(self, mode):
 
         if mode=='kpt':
-            kpt = glob.glob('01.*')[0]
-            os.chdir(kpt)
-            dirs = glob.glob('*')
-            for d in dirs:
-                if os.path.isdir(d):
-                    os.chdir(d)
-                    os.system('sbatch slm_*')
-                    os.chdir('..')
-            os.chdir('..')
-
+            targets = sorted(self.root.glob('01.*'))
+        
         elif mode=='opt':
-            opt = glob.glob('02.*')[0]
-            os.chdir(opt)
-            dirs = glob.glob('*')
-            for d in dirs:
-                if os.path.isdir(d):
-                    os.chdir(d)
-                    os.system('sbatch slm_*')
-                    os.chdir('..')
-            os.chdir('..')
+            targets = sorted(self.root.glob('02.*'))
+        else:
+            targets = []
+
+        if not targets:
+            return
+
+        base_dir = targets[0]
+        with working_dir(base_dir):
+            for subdir in sorted(Path.cwd().iterdir()):
+                if not subdir.is_dir():
+                    continue
+                with working_dir(subdir):
+                    for script in sorted(Path.cwd().glob('slm_*')):
+                        subprocess.run(['sbatch', str(script)], check=True)
 
 
 if __name__ == '__main__':
