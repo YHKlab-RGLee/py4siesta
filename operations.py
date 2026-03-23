@@ -18,7 +18,6 @@ class SiestaContext:
         self.struct = s2.read_fdf(self.origin_dir / "input" / "STRUCT.fdf")
 
 
-
 class BaseOperation:
     base_dirname = ""
     output_name = "STRUCT.fdf"
@@ -41,6 +40,36 @@ class BaseOperation:
                 atom.set_position(Vector(position))
 
         return scaled_struct
+
+    @staticmethod
+    def _selected_serials(struct, selection):
+        selected = struct.copy()
+        selected.select_atmnbs(selection)
+        return list(selected._selected)
+
+    @classmethod
+    def _validate_selection(cls, struct, selection):
+        selected_serials = cls._selected_serials(struct, selection)
+        all_serials = set(struct.get_serials())
+        remaining_serials = sorted(all_serials - set(selected_serials))
+        if not selected_serials:
+            raise ValueError("No atoms were selected.")
+        if not remaining_serials:
+            raise ValueError("Selection must leave at least one fixed atom.")
+        return selected_serials, remaining_serials
+
+    @staticmethod
+    def _translate_selected(struct, selected_serials, displacement):
+        translated = struct.copy()
+        translated._selected = list(selected_serials)
+        translated.translate(*np.asarray(displacement, dtype=float))
+        return translated
+
+    @staticmethod
+    def _minimum_z_distance(struct, selected_serials, remaining_serials):
+        selected_z = [float(struct._atoms[serial - 1].get_position()[2]) for serial in selected_serials]
+        remaining_z = [float(struct._atoms[serial - 1].get_position()[2]) for serial in remaining_serials]
+        return min(abs(z_sel - z_fix) for z_sel in selected_z for z_fix in remaining_z)
 
     def prepare_base_dir(self):
         base_dir = self.base_dir
@@ -152,49 +181,63 @@ class SlabEosOperation(BaseOperation):
         )
 
 
-class LayerEosOperation(BaseOperation):
-    base_dirname = "02.layer_eos"
+class SlidingOperation(BaseOperation):
+    base_dirname = "02.sliding"
 
-    @staticmethod
-    def _translate_all(struct, displacement):
-        translated = struct.copy()
-        translated.select_all()
-        translated.translate(*np.asarray(displacement, dtype=float))
-        return translated
-
-    @classmethod
-    def image_layer(cls, struct, displacement=np.array([0, 0, 0])):
-        struct2 = struct.copy()
-        struct3 = struct2 * [1, 1, 2]
-        natm = len(struct2._atoms)
-        translated_layer = cls._translate_all(struct2, displacement)
-
-        for index, atom in enumerate(translated_layer):
-            struct3._atoms[index + natm].set_position(atom.get_position())
-
-        struct3.set_cell(np.array(struct2.get_cell(), copy=True))
-        return struct3
-
-    def case_parameters(self, shift=np.array([0, 0, 0]), displacement=3.3, ratio_range=None):
-        if ratio_range is None:
-            ratio_range = np.linspace(0.9, 1.1, 11)
-        return [(shift, displacement * ratio) for ratio in ratio_range]
+    def case_parameters(self, selection, x_values, y_values):
+        struct = self.context.struct
+        selected_serials, _ = self._validate_selection(struct, selection)
+        return [
+            (selected_serials, float(dx), float(dy))
+            for dx in x_values
+            for dy in y_values
+        ]
 
     def case_name(self, index, case_parameter):
-        _, displacement = case_parameter
-        return f"{index:02d}-{displacement:5.4f}"
+        _, dx, dy = case_parameter
+        return f"{index:02d}-dx_{dx:+0.4f}-dy_{dy:+0.4f}"
 
     def build_case_input(self, case_parameter):
-        shift, displacement = case_parameter
-        disp_vector = shift + np.array([0, 0, displacement])
-        return self.image_layer(self.context.struct, disp_vector)
+        selected_serials, dx, dy = case_parameter
+        return self._translate_selected(self.context.struct, selected_serials, [dx, dy, 0.0])
+
+
+class DistanceOperation(BaseOperation):
+    base_dirname = "02.distance"
+
+    def current_distance(self, selection):
+        struct = self.context.struct
+        selected_serials, remaining_serials = self._validate_selection(struct, selection)
+        return self._minimum_z_distance(struct, selected_serials, remaining_serials)
+
+    def case_parameters(self, selection, distance_range):
+        struct = self.context.struct
+        selected_serials, remaining_serials = self._validate_selection(struct, selection)
+        current_distance = self._minimum_z_distance(struct, selected_serials, remaining_serials)
+        return [
+            (selected_serials, remaining_serials, current_distance, float(target_distance))
+            for target_distance in distance_range
+        ]
+
+    def case_name(self, index, case_parameter):
+        _, _, _, target_distance = case_parameter
+        return f"{index:02d}-distance_{target_distance:0.4f}"
+
+    def build_case_input(self, case_parameter):
+        selected_serials, _, current_distance, target_distance = case_parameter
+        dz = target_distance - current_distance
+        return self._translate_selected(self.context.struct, selected_serials, [0.0, 0.0, dz])
 
 
 class FitOptimizedStructureOperation:
     def __init__(self, context: SiestaContext):
         self.context = context
 
-    def run(self, shift=np.array([0, 0, 0]), mode="Murnaghan"):
+    @staticmethod
+    def _distance_from_case_name(case_name):
+        return float(case_name.split("distance_")[-1])
+
+    def run(self, mode="Murnaghan", selection=None):
         struct = self.context.struct.copy()
         atoms = struct._atoms
         cell = np.array(struct.get_cell(), copy=True)
@@ -205,8 +248,8 @@ class FitOptimizedStructureOperation:
             base_dir = self.context.root / "02.volume_eos"
         elif mode == "Polynomial":
             base_dir = self.context.root / "02.slab_eos"
-        elif mode == "Layer":
-            base_dir = self.context.root / "02.layer_eos"
+        elif mode == "Distance":
+            base_dir = self.context.root / "02.distance"
         else:
             base_dir = self.context.root
 
@@ -243,8 +286,8 @@ class FitOptimizedStructureOperation:
                 energy.append(float(energy_line.split()[-1]))
                 volume.append(float(volume_line.split()[-1]))
 
-                if mode == "Layer":
-                    lattice.append(float(path.name.split("-")[-1]))
+                if mode == "Distance":
+                    lattice.append(self._distance_from_case_name(path.name))
                 elif lattice_line:
                     lattice.append(float(lattice_line.split()[-3]))
 
@@ -254,7 +297,6 @@ class FitOptimizedStructureOperation:
 
         a, b, c = plt.polyfit(volume, energy, 2)
         coeff_poly_4nd = plt.polyfit(lattice, energy, 4)
-        coeff_poly_2nd = plt.polyfit(lattice, energy, 2)
 
         v0 = -b / (2 * a)
         e0 = a * v0 ** 2 + b * v0 + c
@@ -277,14 +319,7 @@ class FitOptimizedStructureOperation:
             e_local = parameters[4]
             return a_local * x ** 4 + b_local * x ** 3 + c_local * x ** 2 + d_local * x + e_local
 
-        def polynomial_2nd(parameters, x):
-            a_local = parameters[0]
-            b_local = parameters[1]
-            c_local = parameters[2]
-            return a_local * x ** 2 + b_local * x + c_local
-
         func_poly_4nd = lambda x: polynomial(coeff_poly_4nd, x)
-        func_poly_2nd = lambda x: polynomial_2nd(coeff_poly_2nd, x)
 
         def loss_function(parameters, y, x):
             return y - murnaghan(parameters, x)
@@ -307,7 +342,6 @@ class FitOptimizedStructureOperation:
         elif mode == "Polynomial":
             vfit = np.linspace(min(lattice), max(lattice), 100)
             opt_lattice = fminbound(func_poly_4nd, min(lattice), max(lattice))
-            opt_energy = func_poly_4nd(opt_lattice)
             opt_func = polynomial(coeff_poly_4nd, vfit)
 
             ratio = opt_lattice / init_lattice
@@ -315,22 +349,33 @@ class FitOptimizedStructureOperation:
             for iatom in range(len(atoms)):
                 pos = ratio * atoms[iatom]._position
                 struct._atoms[iatom].set_position(Vector(pos))
-            vector = cell
+            vector = cell.copy()
             vector[:, 0:2] = ratio * cell[:, 0:2]
             struct._cell = vector
             plt.plot(lattice, energy, "ro")
 
-        elif mode == "Layer":
+        elif mode == "Distance":
             vfit = np.linspace(min(lattice), max(lattice), 100)
-            opt_lattice = fminbound(func_poly_4nd, min(lattice), max(lattice))
-            opt_energy = func_poly_4nd(opt_lattice)
+            opt_distance = fminbound(func_poly_4nd, min(lattice), max(lattice))
             opt_func = polynomial(coeff_poly_4nd, vfit)
-
-            disp_vector = shift + np.array([0, 0, opt_lattice])
-            struct = LayerEosOperation(self.context).image_layer(struct, disp_vector)
-
-            vector = cell
-            struct._cell = vector
+            distance_operation = DistanceOperation(self.context)
+            if selection is None:
+                raise ValueError("Distance fitting requires a moving atom selection.")
+            selected_serials, remaining_serials = distance_operation._validate_selection(
+                self.context.struct,
+                selection,
+            )
+            current_distance = distance_operation._minimum_z_distance(
+                self.context.struct,
+                selected_serials,
+                remaining_serials,
+            )
+            struct = distance_operation._translate_selected(
+                self.context.struct,
+                selected_serials,
+                [0.0, 0.0, opt_distance - current_distance],
+            )
+            struct._cell = cell.copy()
             plt.plot(lattice, energy, "ro")
 
         with working_dir(base_dir):
@@ -339,7 +384,8 @@ class FitOptimizedStructureOperation:
 
             copy_contents(self.context.origin_dir, optimized_dir)
             with working_dir(optimized_dir):
-                self.context.write_struct(struct, Path("input"))
+                s2.Siesta(struct).write_struct()
+                shutil.move("STRUCT.fdf", Path("input") / "STRUCT.fdf")
 
 
 class JobSubmissionOperation:
@@ -387,7 +433,8 @@ class siesta_eos:
         self._kpoint_sampling = KPointSamplingOperation(self.context)
         self._bulk_eos = BulkEosOperation(self.context)
         self._slab_eos = SlabEosOperation(self.context)
-        self._layer_eos = LayerEosOperation(self.context)
+        self._sliding = SlidingOperation(self.context)
+        self._distance = DistanceOperation(self.context)
         self._fit_optimized_structure = FitOptimizedStructureOperation(self.context)
         self._job_submission = JobSubmissionOperation(self.context)
         self._move_structure = MoveStructureOperation(self.context)
@@ -401,11 +448,17 @@ class siesta_eos:
     def eos_slab(self, ratio_range=None):
         return self._slab_eos.run(ratio_range=ratio_range)
 
-    def eos_layer(self, shift=np.array([0, 0, 0]), displacement=3.3, ratio_range=None):
-        return self._layer_eos.run(shift=shift, displacement=displacement, ratio_range=ratio_range)
+    def eos_sliding(self, selection, x_values, y_values):
+        return self._sliding.run(selection=selection, x_values=x_values, y_values=y_values)
 
-    def find_optimized_lattice(self, shift=np.array([0, 0, 0]), mode="Murnaghan"):
-        return self._fit_optimized_structure.run(shift=shift, mode=mode)
+    def get_distance_min(self, selection):
+        return self._distance.current_distance(selection)
+
+    def eos_distance(self, selection, distance_range):
+        return self._distance.run(selection=selection, distance_range=distance_range)
+
+    def find_optimized_lattice(self, mode="Murnaghan", selection=None):
+        return self._fit_optimized_structure.run(mode=mode, selection=selection)
 
     def qsub(self, mode):
         return self._job_submission.run(mode)
