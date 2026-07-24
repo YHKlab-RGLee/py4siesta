@@ -1,6 +1,6 @@
 # py4siesta
 
-`py4siesta` is a numbered-menu command-line tool for preparing, organizing, submitting, and post-processing SIESTA calculation cases.
+`py4siesta` provides interactive and deterministic command-line interfaces for preparing, organizing, submitting, and post-processing SIESTA calculation cases. A separate AI-agent orchestration interface is planned.
 
 It is designed around one workflow:
 
@@ -38,7 +38,7 @@ For development, use editable install instead:
 pip install -e .
 ```
 
-Run the CLI:
+Run the interactive numbered-menu interface:
 
 ```bash
 py4siesta
@@ -49,6 +49,16 @@ Or run it directly from the repository root:
 ```bash
 python -m py4siesta
 ```
+
+The project has three separate user interfaces:
+
+| Interface | Purpose | Status |
+| --- | --- | --- |
+| `python py4siesta` | Interactive GUI/menu-based workflow. | Available |
+| `py4siesta-tool <command> [options]` | Direct, deterministic CLI tool invocation with JSON output. | Available |
+| `py4siesta-agent "<request>"` | Natural-language AI-agent orchestration over existing tools. | Skeleton only; under development |
+
+After installation, the equivalent entry points are `py4siesta`, `py4siesta-tool`, and `py4siesta-agent`.
 
 ## Requirements
 
@@ -176,12 +186,18 @@ python -m py4siesta
 python {py4siesta_path}/run.py
 ```
 
-## Agent JSON Tool
+## Direct JSON Tools
 
-For AI agents or scripts that need non-interactive access while preserving the numbered menu CLI, use:
+For scripts and other callers that need direct non-interactive access to deterministic operations, use:
 
 ```bash
 py4siesta-tool <command> [options]
+```
+
+Without installation, the same interface is available from the repository root as:
+
+```bash
+python -m py4siesta.tool_cli <command> [options]
 ```
 
 The command prints one JSON object. Successful commands include `"ok": true`; failures return a nonzero exit status and a JSON error object.
@@ -200,6 +216,30 @@ For `py4siesta-tool pdos`, pass one or more `--orbital` selections in `atom_or_s
 
 Run `py4siesta-tool --help` or `py4siesta-tool <command> --help` for the full command list and required inputs.
 
+`py4siesta-tool` is a deterministic CLI, not an AI agent. It performs only the command and options explicitly supplied by the caller.
+
+## AI-Agent Interface
+
+The planned natural-language orchestration entry point is:
+
+```bash
+py4siesta-agent "Can you set up the input parameters for ReS2?"
+```
+
+After installation, it can be invoked as `py4siesta-agent`. This interface is currently an under-development skeleton: it accepts the future prompt shape but does not make LLM decisions or run autonomous scientific workflows.
+
+The intended layer hierarchy is:
+
+```text
+NanoCore
+    ↓
+py4siesta / py4siesta-tool
+    ↓
+py4siesta-agent
+```
+
+The dependency direction is one-way: `py4siesta-agent` may depend on `py4siesta-tool` and `py4siesta`, which may depend on `NanoCore`, never the reverse. `NanoCore` owns reusable scientific functionality. `py4siesta` and `py4siesta-tool` provide deterministic application workflows over it. The agent layer may orchestrate those existing tools through thin adapters, but must not duplicate their scientific or workflow implementations. NanoCore and the deterministic interfaces do not depend on the agent package or any future agent-framework dependencies.
+
 ## Bundled NanoCore
 
 This project is based on `NanoCore`, an older version of the ongoing [`OORINano`](https://github.com/yhkimlab/OORINano) project. `NanoCore` is imported locally from this repository.
@@ -207,5 +247,5 @@ This project is based on `NanoCore`, an older version of the ongoing [`OORINano`
 That means:
 
 - `python -m py4siesta` works from this repository because `NanoCore/` is present locally.
-- `pip install .` or `pip install -e .` installs both `py4siesta` and the bundled `NanoCore` package defined in `pyproject.toml`.
+- `pip install .` or `pip install -e .` installs `py4siesta`, the `py4siesta_agent` skeleton, and the bundled `NanoCore` package defined in `pyproject.toml`.
 - There is no need to fetch `NanoCore` from an external site or package index.

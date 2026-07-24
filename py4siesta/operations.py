@@ -19,6 +19,39 @@ class SiestaContext:
         self.struct = s2.read_fdf(self.origin_dir / "input" / "STRUCT.fdf")
 
 
+def sliding_case_label(displacement_mode, components):
+    first, second = np.asarray(components, dtype=float)
+    if displacement_mode == "fractional":
+        return f"fa_{first:+0.4f}-fb_{second:+0.4f}"
+    if displacement_mode == "absolute":
+        return f"x_{first:+0.4f}-y_{second:+0.4f}"
+    raise ValueError(f"Unsupported sliding mode: {displacement_mode}")
+
+
+def sliding_displacement(struct, displacement_mode, components):
+    vector = np.asarray(components, dtype=float)
+    if vector.shape != (2,):
+        raise ValueError("Each sliding vector must contain exactly two in-plane components.")
+
+    if displacement_mode == "fractional":
+        cell = np.array(struct.get_cell(), dtype=float, copy=True)
+        displacement = vector[0] * cell[0] + vector[1] * cell[1]
+        displacement[2] = 0.0
+        return displacement
+
+    if displacement_mode == "absolute":
+        return np.array([vector[0], vector[1], 0.0], dtype=float)
+
+    raise ValueError(f"Unsupported sliding mode: {displacement_mode}")
+
+
+def prepare_sliding_cases(struct, displacement_mode, vectors):
+    return [
+        (sliding_case_label(displacement_mode, vector), sliding_displacement(struct, displacement_mode, vector))
+        for vector in vectors
+    ]
+
+
 class BaseOperation:
     base_dirname = ""
     output_name = "STRUCT.fdf"

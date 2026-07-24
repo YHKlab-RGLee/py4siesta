@@ -16,10 +16,11 @@ dependencies = [
 
 [project.scripts]
 py4siesta = "py4siesta.cli:main"
-py4siesta-tool = "py4siesta.agent_cli:main"
+py4siesta-tool = "py4siesta.tool_cli:main"
+py4siesta-agent = "py4siesta_agent.cli:main"
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["py4siesta", "NanoCore"]
+include = ["py4siesta", "py4siesta_agent", "NanoCore"]
