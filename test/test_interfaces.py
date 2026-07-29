@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from py4siesta import agent_cli, tool_cli
+from py4siesta import tool_cli
 from py4siesta.operations import prepare_sliding_cases
 from py4siesta_agent import cli as agent_interface
 from py4siesta_agent import tools as agent_tools
@@ -79,11 +79,6 @@ class InterfaceBoundaryTests(unittest.TestCase):
         self.assertEqual(payload["command"], "band")
         self.assertEqual(payload["error"]["type"], "FileNotFoundError")
 
-    def test_legacy_agent_cli_module_forwards_to_tool_cli(self):
-        self.assertIs(agent_cli.build_parser, tool_cli.build_parser)
-        self.assertIs(agent_cli.execute, tool_cli.execute)
-        self.assertIs(agent_cli._parse_orbital_arguments, tool_cli._parse_orbital_arguments)
-
     def test_tool_cli_no_longer_depends_on_interactive_cli(self):
         self.assertIs(tool_cli.prepare_sliding_cases, prepare_sliding_cases)
 
@@ -95,7 +90,7 @@ class InterfaceBoundaryTests(unittest.TestCase):
         self.assertEqual(result, expected)
         execute.assert_called_once_with(["example"])
 
-    def test_agent_cli_is_explicitly_an_under_development_skeleton(self):
+    def test_py4siesta_agent_is_explicitly_an_under_development_skeleton(self):
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
             status = agent_interface.main(["Set up ReS2 input parameters"])

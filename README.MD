@@ -92,18 +92,36 @@ For PDOS extraction, make sure `siesta_util_location` points to the directory co
 
 ## Working Directory Setup
 
-Before running case-generation menus, create an `origin/` directory in your working directory.
+Create a complete `origin/` directory non-interactively from a SIESTA FDF
+structure, exchange-correlation functional, initial k-point mesh, and SLURM
+script:
+
+```bash
+py4siesta-tool init \
+    --structure C_diamond.fdf \
+    --xc lda \
+    --kpt 2 2 2 \
+    --slurm ./slm_siesta_run
+```
+
+The command obtains the required pseudopotentials from the database configured
+by `siesta_psf_location` in `NanoCore/env.py`. It refuses to overwrite an
+existing `origin/` directory.
 
 Expected layout:
 
 ```text
 origin/
-├── input/
-│   └── STRUCT.fdf
-└── slm_siesta_run
+├── slm_siesta_run
+└── input/
+    ├── RUN.fdf
+    ├── STRUCT.fdf
+    ├── BASIS.fdf
+    ├── KPT.fdf
+    └── *.psf
 ```
 
-Required inputs:
+You may also prepare this layout manually. Required inputs:
 
 | Path | Purpose |
 | --- | --- |
