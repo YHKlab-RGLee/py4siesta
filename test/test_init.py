@@ -14,8 +14,8 @@ from py4siesta.utils import working_dir
 
 class InitToolTests(unittest.TestCase):
     repository = Path(__file__).resolve().parent.parent
-    structure = repository / "tests" / "data" / "C_diamond.fdf"
-    slurm = repository / "tests" / "data" / "slm_siesta_run"
+    structure = repository / "test" / "init_origin" / "C_diamond.fdf"
+    slurm = repository / "test" / "init_origin" / "slm_siesta_run"
 
     def _pseudopotential_database(self, root, include_carbon=True):
         database = Path(root) / "psf"

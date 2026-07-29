@@ -1,8 +1,31 @@
 # py4siesta
 
-`py4siesta` provides interactive and deterministic command-line interfaces for preparing, organizing, submitting, and post-processing SIESTA calculation cases. A separate AI-agent orchestration interface is planned.
+`py4siesta` provides interactive, deterministic, and AI-orchestrated command-line interfaces for preparing, organizing, submitting, and post-processing SIESTA calculation cases.
 
-It is designed around one workflow:
+## Table of Contents
+
+- [Important Notice](#important-notice)
+- [Quick Start](#quick-start)
+- [Requirements](#requirements)
+- [Configure SIESTA Paths](#configure-siesta-paths)
+- [Working Directory Setup](#working-directory-setup)
+- [Menu Reference](#menu-reference)
+  - [K-point Sampling](#k-point-sampling)
+  - [Structure Optimization](#structure-optimization)
+  - [Job Submission](#job-submission)
+  - [Post-Process](#post-process)
+  - [Utility](#utility)
+- [Running Modes](#running-modes)
+- [Direct JSON Tools](#direct-json-tools)
+- [AI-Agent Interface](#ai-agent-interface)
+  - [Install Agent Support](#install-agent-support)
+  - [Configure the Agent](#configure-the-agent)
+  - [Run the Agent](#run-the-agent)
+  - [Agent Outputs](#agent-outputs)
+- [Bundled NanoCore](#bundled-nanocore)
+
+The interactive and deterministic interfaces are designed around this basic
+workflow:
 
 1. Prepare a reference SIESTA input in an `origin/` directory.
 2. Start the CLI.
@@ -56,19 +79,25 @@ The project has three separate user interfaces:
 | --- | --- | --- |
 | `python py4siesta` | Interactive GUI/menu-based workflow. | Available |
 | `py4siesta-tool <command> [options]` | Direct, deterministic CLI tool invocation with JSON output. | Available |
-| `py4siesta-agent "<request>"` | Natural-language AI-agent orchestration over existing tools. | Skeleton only; under development |
+| `py4siesta-agent "<request>"` | Natural-language AI-agent orchestration over existing tools. | Initial DFT setup workflow available |
 
 After installation, the equivalent entry points are `py4siesta`, `py4siesta-tool`, and `py4siesta-agent`.
 
 ## Requirements
 
-Runtime Python dependencies are declared in `pyproject.toml`:
+Core runtime dependencies are declared in `pyproject.toml`:
 
+- Python 3.7 or newer for the non-agent interfaces
 - `numpy`
 - `scipy`
 - `matplotlib`
 
 The repository also installs the bundled `NanoCore` package.
+
+Agent frameworks, model-provider integrations, and the Materials Project
+client are optional extras. The agent workflow requires Python 3.10 or newer.
+C2DB monolayer structures use its public OPTIMADE endpoint and require no
+additional Python package.
 
 ## Configure SIESTA Paths
 
@@ -238,25 +267,139 @@ Run `py4siesta-tool --help` or `py4siesta-tool <command> --help` for the full co
 
 ## AI-Agent Interface
 
-The planned natural-language orchestration entry point is:
+The agent interface currently supports preparing a complete SIESTA DFT setup,
+including k-point convergence, lattice optimization, geometry optimization,
+and final-input generation.
+
+### Install Agent Support
+
+Install one model provider and any optional bulk-structure client you need:
 
 ```bash
-py4siesta-agent "Can you set up the input parameters for ReS2?"
+# OpenAI
+pip install '.[openai]'
+
+# Anthropic with Materials Project
+pip install '.[anthropic,materials-project]'
+
+# Local Ollama model
+pip install '.[ollama]'
 ```
 
-After installation, it can be invoked as `py4siesta-agent`. This interface is currently an under-development skeleton: it accepts the future prompt shape but does not make LLM decisions or run autonomous scientific workflows.
+### Configure the Agent
 
-The intended layer hierarchy is:
+Set the model provider, model name, k-points, scheduler script, and calculation
+directory.
+
+Example for OpenAI and a 2D material from online C2DB:
+
+```bash
+export PY4SIESTA_LLM_PROVIDER="openai"
+export PY4SIESTA_LLM_MODEL="<model-name>"
+export OPENAI_API_KEY="<your-api-key>"
+
+export PY4SIESTA_INITIAL_KPOINTS="2 2 1"
+export PY4SIESTA_KPOINT_SERIES="2 4 6 8"
+
+export PY4SIESTA_SLURM_TEMPLATE="/absolute/path/to/slm_siesta_run"
+export PY4SIESTA_MAX_TOTAL_NODES="10"
+export PY4SIESTA_POLL_INTERVAL_SECONDS="60"
+export PY4SIESTA_WORKDIR="/absolute/path/to/calculation"
+```
+
+For Anthropic, use:
+
+```bash
+export PY4SIESTA_LLM_PROVIDER="anthropic"
+export PY4SIESTA_LLM_MODEL="<model-name>"
+export ANTHROPIC_API_KEY="<your-api-key>"
+```
+
+For a local Ollama model, use:
+
+```bash
+export PY4SIESTA_LLM_PROVIDER="ollama"
+export PY4SIESTA_LLM_MODEL="<local-model-name>"
+```
+
+For a bulk structure from Materials Project, set:
+
+```bash
+export MP_API_KEY="<your-materials-project-api-key>"
+```
+
+Also configure `siesta_psf_location` in `NanoCore/env.py` as described in
+[Configure SIESTA Paths](#configure-siesta-paths).
+
+The scheduler script must be readable and contain either:
+
+```bash
+#SBATCH --nodes=1
+```
+
+or:
+
+```bash
+#SBATCH -N 1
+```
+
+Keep API keys private. Do not add them to source files, scheduler scripts, or
+calculation directories.
+
+### Run the Agent
+
+From the repository root:
+
+```bash
+python py4siesta-agent \
+    "can you setup the dft calculation with lda for ReS2 monolayer"
+```
+
+After installation:
+
+```bash
+py4siesta-agent \
+    "can you setup the dft calculation with lda for ReS2 monolayer"
+```
+
+To specify the calculation directory directly:
+
+```bash
+python py4siesta-agent \
+    --workdir /absolute/path/to/calculation \
+    "can you setup the dft calculation with lda for ReS2 monolayer"
+```
+
+The command stays active while scheduler jobs are queued or running. It
+automatically submits each calculation stage, monitors the jobs, analyzes
+completed outputs, and advances to the next stage. No additional agent command
+is required.
+
+For a complete ReS2 example covering model configuration, local
+pseudopotentials, the supplied Slurm template, and the one-command workflow,
+see the
+[ReS2 agent tutorial](docs/tutorial_res2_agent.md).
+
+To use an existing local structure, include its absolute FDF path in the
+request.
+
+### Agent Outputs
+
+The calculation directory contains:
 
 ```text
-NanoCore
-    ↓
-py4siesta / py4siesta-tool
-    ↓
-py4siesta-agent
+origin/
+01.kpoint_sampling/
+02.slab_eos/ or 02.volume_eos/
+03.geometry_optimization/
+final_input/
+.py4siesta-agent/checkpoints.sqlite
+.py4siesta-agent/<workflow-id>.md
 ```
 
-The dependency direction is one-way: `py4siesta-agent` may depend on `py4siesta-tool` and `py4siesta`, which may depend on `NanoCore`, never the reverse. `NanoCore` owns reusable scientific functionality. `py4siesta` and `py4siesta-tool` provide deterministic application workflows over it. The agent layer may orchestrate those existing tools through thin adapters, but must not duplicate their scientific or workflow implementations. NanoCore and the deterministic interfaces do not depend on the agent package or any future agent-framework dependencies.
+If a scheduler job fails or required SIESTA output is missing, the workflow
+stops and records the error in its JSON state and Markdown summary. Failed
+calculations are not automatically modified or resubmitted.
 
 ## Bundled NanoCore
 
@@ -265,5 +408,7 @@ This project is based on `NanoCore`, an older version of the ongoing [`OORINano`
 That means:
 
 - `python -m py4siesta` works from this repository because `NanoCore/` is present locally.
-- `pip install .` or `pip install -e .` installs `py4siesta`, the `py4siesta_agent` skeleton, and the bundled `NanoCore` package defined in `pyproject.toml`.
+- `pip install .` or `pip install -e .` installs `py4siesta`, the
+  `py4siesta_agent` package, and the bundled `NanoCore` package defined in
+  `pyproject.toml`.
 - There is no need to fetch `NanoCore` from an external site or package index.
