@@ -9,7 +9,7 @@ import numpy as np
 
 from NanoCore import s2
 
-from .operations import SiestaWorkflow, prepare_sliding_cases
+from .operations import SiestaWorkflow, initialize_origin, prepare_sliding_cases
 from .post_process import generate_pdos_csv, plot_band_structure, plot_pldos
 
 
@@ -73,6 +73,22 @@ def _workflow():
 
 def _scale_mask(values):
     return None if values is None else [int(value) for value in values]
+
+
+def _positive_int(value):
+    parsed = int(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
+def _cmd_init(args):
+    return initialize_origin(
+        structure=args.structure,
+        xc=args.xc,
+        kpoints=args.kpt,
+        slurm=args.slurm,
+    )
 
 
 def _cmd_kpoint_bulk(args):
@@ -211,6 +227,26 @@ def build_parser():
         description="Non-interactive JSON tools for py4siesta.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    command = subparsers.add_parser("init", help="Create a complete origin directory.")
+    command.add_argument("--structure", required=True, help="Structure in SIESTA FDF format.")
+    command.add_argument(
+        "--xc",
+        required=True,
+        type=str.lower,
+        choices=["lda", "gga"],
+        help="Exchange-correlation functional.",
+    )
+    command.add_argument(
+        "--kpt",
+        type=_positive_int,
+        nargs=3,
+        required=True,
+        metavar=("KX", "KY", "KZ"),
+        help="Initial Monkhorst-Pack k-point sampling.",
+    )
+    command.add_argument("--slurm", required=True, help="SLURM script copied into origin.")
+    command.set_defaults(func=_cmd_init)
 
     command = subparsers.add_parser("kpoint-bulk", help="Generate bulk k-point sampling cases.")
     command.add_argument("--kpoints", type=int, nargs="+", required=True)

@@ -8,13 +8,12 @@ from unittest import mock
 
 import numpy as np
 
-from py4siesta import post_process
-from py4siesta import agent_cli
+from py4siesta import post_process, tool_cli
 from py4siesta.operations import KPointAnalysisOperation, KPointSamplingOperation, SiestaWorkflow, siesta_eos
 from py4siesta.post_process import _friendly_pdos_label, _plot_pdos, _selection_from_orbital_token
 
 
-class AgentCliTests(unittest.TestCase):
+class ToolCliTests(unittest.TestCase):
     def test_siesta_workflow_keeps_legacy_alias(self):
         self.assertIs(siesta_eos, SiestaWorkflow)
 
@@ -32,7 +31,7 @@ class AgentCliTests(unittest.TestCase):
         self.assertEqual(KPointAnalysisOperation._k_value_from_case_name("10+10+10"), 10)
 
     def test_parser_accepts_representative_commands(self):
-        parser = agent_cli.build_parser()
+        parser = tool_cli.build_parser()
 
         args = parser.parse_args(["kpoint-bulk", "--kpoints", "2", "4", "6"])
         self.assertEqual(args.command, "kpoint-bulk")
@@ -52,13 +51,13 @@ class AgentCliTests(unittest.TestCase):
         self.assertEqual(args.vector, [[0.25, 0.5]])
 
     def test_pdos_parser_accepts_multiple_orbital_input_forms(self):
-        parser = agent_cli.build_parser()
+        parser = tool_cli.build_parser()
 
         args = parser.parse_args(["pdos", "--pdos-path", "MgO.PDOS", "--orbital", "Mg_0", "O_0"])
-        self.assertEqual(agent_cli._parse_orbital_arguments(args.orbital), ["Mg_0", "O_0"])
+        self.assertEqual(tool_cli._parse_orbital_arguments(args.orbital), ["Mg_0", "O_0"])
 
         args = parser.parse_args(["pdos", "--pdos-path", "MgO.PDOS", "--orbital", "Mg_0,O_0"])
-        self.assertEqual(agent_cli._parse_orbital_arguments(args.orbital), ["Mg_0", "O_0"])
+        self.assertEqual(tool_cli._parse_orbital_arguments(args.orbital), ["Mg_0", "O_0"])
 
         args = parser.parse_args([
             "pdos",
@@ -69,10 +68,10 @@ class AgentCliTests(unittest.TestCase):
             "--orbital",
             "O_0",
         ])
-        self.assertEqual(agent_cli._parse_orbital_arguments(args.orbital), ["Mg_0", "O_0"])
+        self.assertEqual(tool_cli._parse_orbital_arguments(args.orbital), ["Mg_0", "O_0"])
 
     def test_pdos_parser_explains_extra_orbital_arguments(self):
-        parser = agent_cli.build_parser()
+        parser = tool_cli.build_parser()
         stderr = io.StringIO()
 
         with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
@@ -110,7 +109,7 @@ class AgentCliTests(unittest.TestCase):
         stderr = io.StringIO()
 
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-            status = agent_cli.main(["band", "--bands-path", "missing.bands"])
+            status = tool_cli.main(["band", "--bands-path", "missing.bands"])
 
         self.assertEqual(status, 1)
         self.assertEqual(stdout.getvalue(), "")

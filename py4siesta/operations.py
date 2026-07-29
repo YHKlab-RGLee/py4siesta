@@ -1,4 +1,5 @@
 import json
+import operator
 import shutil
 import subprocess
 from pathlib import Path
@@ -10,6 +11,77 @@ from scipy.optimize import fminbound, leastsq
 from NanoCore import *
 
 from .utils import copy_contents, last_matching_line, working_dir
+
+
+def initialize_origin(structure, xc, kpoints, slurm, root="."):
+    """Create a complete ``origin`` directory for deterministic workflows."""
+
+    structure_path = Path(structure).expanduser()
+    slurm_path = Path(slurm).expanduser()
+    if not structure_path.is_file():
+        raise FileNotFoundError(f"Structure file does not exist: {structure_path}")
+    if not slurm_path.is_file():
+        raise FileNotFoundError(f"SLURM script does not exist: {slurm_path}")
+
+    try:
+        kpoint_values = [operator.index(value) for value in kpoints]
+    except (TypeError, ValueError) as exc:
+        raise ValueError("K-point sampling must contain exactly three positive integers.") from exc
+    if len(kpoint_values) != 3 or any(value <= 0 for value in kpoint_values):
+        raise ValueError("K-point sampling must contain exactly three positive integers.")
+
+    xc_value = str(xc).upper()
+    if xc_value not in {"LDA", "GGA"}:
+        raise ValueError("Exchange-correlation functional must be either LDA or GGA.")
+
+    root_path = Path(root)
+    origin_dir = root_path / "origin"
+    if origin_dir.exists():
+        raise FileExistsError(f"Refusing to overwrite existing origin directory: {origin_dir}")
+
+    structure_path = structure_path.resolve()
+    slurm_path = slurm_path.resolve()
+    structure_system = s2.read_fdf(str(structure_path))
+    simulation = s2.Siesta(structure_system)
+    simulation.set_option("Name", structure_path.stem)
+    simulation.set_option("Label", structure_path.stem)
+    simulation.set_option("XCfunc", xc_value)
+    simulation.set_option("XCauthor", "CA" if xc_value == "LDA" else "PBE")
+    simulation.set_option("kgrid", kpoint_values)
+
+    # Resolve every required database file before creating origin, so failures do
+    # not leave a partial project behind.
+    simulation.pseudopotential_paths()
+
+    input_dir = origin_dir / "input"
+    origin_dir.mkdir(parents=True)
+    try:
+        input_dir.mkdir()
+        shutil.copy2(slurm_path, origin_dir / slurm_path.name)
+        with working_dir(input_dir):
+            simulation.write_struct()
+            simulation.write_basis()
+            simulation.write_kpt()
+            simulation.write_siesta()
+            copied_psfs = simulation.copy_pseudopotentials()
+    except Exception:
+        shutil.rmtree(origin_dir)
+        raise
+
+    return {
+        "origin_dir": origin_dir,
+        "slurm": origin_dir / slurm_path.name,
+        "input_dir": input_dir,
+        "fdf_files": [
+            input_dir / "RUN.fdf",
+            input_dir / "STRUCT.fdf",
+            input_dir / "BASIS.fdf",
+            input_dir / "KPT.fdf",
+        ],
+        "pseudopotentials": [input_dir / path.name for path in copied_psfs],
+        "xc": xc_value,
+        "kpoints": kpoint_values,
+    }
 
 
 class SiestaContext:
