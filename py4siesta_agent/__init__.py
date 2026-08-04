@@ -1,3 +1,5 @@
-"""Orchestration layer for the planned py4siesta AI-agent interface."""
+"""AI orchestration layer for py4siesta."""
 
-__all__ = []
+from .router import AgentRouter
+
+__all__ = ["AgentRouter"]

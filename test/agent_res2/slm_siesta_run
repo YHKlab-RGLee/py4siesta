@@ -1,0 +1,47 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=12
+#SBATCH --partition=X2
+#SBATCH --job-name=py4siesta
+#SBATCH --time=24:00:00
+#SBATCH --output=slurm-%j.out
+#SBATCH --error=slurm-%j.err
+
+set -euo pipefail
+
+export OMP_NUM_THREADS=1
+
+SIESTA_BIN="${PY4SIESTA_SIESTA_BIN:-/home2/rong/bin/siesta_4.1b4}"
+MPI_BIN="${PY4SIESTA_MPIRUN:-/opt/intel/oneapi/mpi/2021.12/bin/mpirun}"
+INPUT_DIR="${SLURM_SUBMIT_DIR}/input"
+OUTPUT_DIR="${SLURM_SUBMIT_DIR}/OUT"
+
+if [ ! -x "${SIESTA_BIN}" ]; then
+    echo "SIESTA executable is missing or not executable: ${SIESTA_BIN}" >&2
+    exit 1
+fi
+
+if [ ! -x "${MPI_BIN}" ]; then
+    echo "MPI launcher is missing or not executable: ${MPI_BIN}" >&2
+    exit 1
+fi
+
+if [ ! -f "${INPUT_DIR}/RUN.fdf" ]; then
+    echo "SIESTA input is missing: ${INPUT_DIR}/RUN.fdf" >&2
+    exit 1
+fi
+
+rm -rf "${OUTPUT_DIR}"
+mkdir -p "${OUTPUT_DIR}"
+cp -a "${INPUT_DIR}/." "${OUTPUT_DIR}/"
+cd "${OUTPUT_DIR}"
+
+"${MPI_BIN}" \
+    -np "${SLURM_NTASKS}" \
+    -env I_MPI_FABRICS="shm:tcp" \
+    "${SIESTA_BIN}" \
+    < RUN.fdf \
+    > stdout.txt
+
+# py4siesta uses this marker only after a successful scheduler command.
+touch 0_NORMAL_EXIT

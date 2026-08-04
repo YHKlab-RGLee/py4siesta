@@ -90,14 +90,44 @@ class InterfaceBoundaryTests(unittest.TestCase):
         self.assertEqual(result, expected)
         execute.assert_called_once_with(["example"])
 
-    def test_py4siesta_agent_is_explicitly_an_under_development_skeleton(self):
+    def test_core_packages_do_not_import_agent_or_agent_frameworks(self):
+        repository = Path(__file__).resolve().parent.parent
+        forbidden = ("py4siesta_agent", "langchain", "langgraph")
+        for package in ("NanoCore", "py4siesta"):
+            for path in (repository / package).glob("*.py"):
+                text = path.read_text()
+                for token in forbidden:
+                    self.assertNotIn(token, text, "%s contains %s" % (path, token))
+
+    def test_agent_frameworks_are_not_mandatory_core_dependencies(self):
+        repository = Path(__file__).resolve().parent.parent
+        project = (repository / "pyproject.toml").read_text()
+        mandatory = project.split("[project.optional-dependencies]", 1)[0]
+        for dependency in (
+            "langchain",
+            "langgraph",
+            "langgraph-checkpoint-sqlite",
+            "pydantic",
+        ):
+            self.assertNotIn(dependency, mandatory)
+
+    def test_py4siesta_agent_reports_missing_model_configuration_as_json(self):
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
             status = agent_interface.main(["Set up ReS2 input parameters"])
 
         self.assertEqual(status, 1)
-        self.assertIn("under development", stderr.getvalue())
-        self.assertIn("no agent workflow was run", stderr.getvalue())
+        payload = json.loads(stderr.getvalue())
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["error"]["type"], "AgentConfigurationError")
+        self.assertIn("PY4SIESTA_LLM_PROVIDER", payload["error"]["message"])
+
+    def test_py4siesta_agent_has_only_the_single_request_interface(self):
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            agent_interface.build_parser().parse_args(["status", "workflow-id"])
+
+        self.assertIn("unrecognized arguments: workflow-id", stderr.getvalue())
 
 
 if __name__ == "__main__":

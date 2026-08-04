@@ -84,6 +84,97 @@ def initialize_origin(structure, xc, kpoints, slurm, root="."):
     }
 
 
+def stage_pseudopotential_database(
+    structure,
+    xc,
+    search_directories,
+    destination,
+):
+    """Collect required local PSF files into a standard functional directory."""
+
+    functional = str(xc).upper()
+    if functional not in {"LDA", "GGA"}:
+        raise ValueError("Exchange-correlation functional must be either LDA or GGA.")
+    system = s2.read_fdf(str(structure))
+    symbols = sorted({atom.get_symbol() for atom in system})
+    directories = [Path(path).expanduser().resolve() for path in search_directories]
+    destination = Path(destination).expanduser().resolve()
+    functional_directory = destination / functional
+    resolved = {}
+    for symbol in symbols:
+        for directory in directories:
+            candidate = directory / ("%s.psf" % symbol)
+            if candidate.is_file():
+                resolved[symbol] = candidate
+                break
+        if symbol not in resolved:
+            raise FileNotFoundError(
+                "Pseudopotential for %s was not found in: %s."
+                % (symbol, ", ".join(str(path) for path in directories))
+            )
+
+    functional_directory.mkdir(parents=True, exist_ok=True)
+    for symbol, source in resolved.items():
+        shutil.copy2(source, functional_directory / ("%s.psf" % symbol))
+    return destination
+
+
+def prepare_geometry_optimization(root=".", dimensionality="2D"):
+    """Create the geometry-optimization case from optimized lattice inputs."""
+
+    root = Path(root).resolve()
+    lattice_base = "02.slab_eos" if dimensionality == "2D" else "02.volume_eos"
+    source = root / lattice_base / "optimized_structure"
+    destination = root / "03.geometry_optimization"
+    if not source.is_dir():
+        raise FileNotFoundError("Optimized lattice input is missing: %s" % source)
+    if destination.exists():
+        raise FileExistsError(
+            "Refusing to overwrite geometry optimization: %s" % destination
+        )
+    shutil.copytree(source, destination)
+    return destination
+
+
+def validate_geometry_optimization(root="."):
+    """Validate the required outputs of a completed geometry optimization."""
+
+    case = Path(root).resolve() / "03.geometry_optimization"
+    out_dir = case / "OUT"
+    normal_exit = out_dir / "0_NORMAL_EXIT"
+    structures = sorted(out_dir.glob("*.STRUCT_OUT"))
+    if not normal_exit.is_file():
+        raise FileNotFoundError(
+            "Geometry optimization is incomplete: %s is missing." % normal_exit
+        )
+    if not structures:
+        raise FileNotFoundError(
+            "Geometry optimization output contains no *.STRUCT_OUT file."
+        )
+    s2.read_struct_out(str(structures[-1]))
+    return {
+        "converged": True,
+        "normal_exit": str(normal_exit),
+        "structure_output": str(structures[-1]),
+    }
+
+
+def generate_final_input(root, geometry_result):
+    """Generate a final reusable SIESTA input from optimized coordinates."""
+
+    root = Path(root).resolve()
+    source = root / "03.geometry_optimization"
+    destination = root / "final_input"
+    if destination.exists():
+        raise FileExistsError("Refusing to overwrite final input: %s" % destination)
+    shutil.copytree(source, destination)
+    out_structure = Path(geometry_result["structure_output"])
+    optimized = s2.read_struct_out(str(out_structure))
+    with working_dir(destination / "input"):
+        s2.Siesta(optimized).write_struct()
+    return destination
+
+
 class SiestaContext:
     def __init__(self):
         self.root = Path.cwd()
@@ -648,6 +739,8 @@ class FitOptimizedStructureOperation:
             title = "Murnaghan EOS fitting"
             calculated_label = "Calculated energy"
             fit_label = "Murnaghan fit"
+            optimized_value = float(opt_volume)
+            optimized_name = "equilibrium_volume_A3"
 
         elif mode == "Polynomial":
             vfit = np.linspace(min(lattice), max(lattice), 100)
@@ -667,6 +760,8 @@ class FitOptimizedStructureOperation:
             title = "Polynomial EOS fitting"
             calculated_label = "Calculated energy"
             fit_label = "Polynomial fit"
+            optimized_value = float(opt_lattice)
+            optimized_name = "optimized_lattice_A"
 
         elif mode == "Distance":
             vfit = np.linspace(min(lattice), max(lattice), 100)
@@ -696,6 +791,8 @@ class FitOptimizedStructureOperation:
             title = "Distance fitting"
             calculated_label = "Calculated energy"
             fit_label = "Polynomial fit"
+            optimized_value = float(opt_distance)
+            optimized_name = "optimized_distance_A"
 
         with working_dir(base_dir):
             plt.figure()
@@ -725,6 +822,13 @@ class FitOptimizedStructureOperation:
             with working_dir(optimized_dir):
                 s2.Siesta(struct).write_struct()
                 shutil.move("STRUCT.fdf", Path("input") / "STRUCT.fdf")
+
+        return {
+            "mode": mode,
+            optimized_name: optimized_value,
+            "optimized_structure": optimized_dir,
+            "figure": base_dir / "eos_fitting.png",
+        }
 
 
 class JobSubmissionOperation:
