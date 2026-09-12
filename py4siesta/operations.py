@@ -9,6 +9,7 @@ import numpy as np
 from scipy.optimize import fminbound, leastsq
 
 from NanoCore import *
+from NanoCore.io import write_xyz
 
 from .utils import copy_contents, last_matching_line, working_dir
 
@@ -873,6 +874,10 @@ class MoveStructureOperation:
 
 class InterpolateStructureOperation(BaseOperation):
     base_dirname = "11.interpolate_structure"
+
+    def finalize_case(self, case_input):
+        super().finalize_case(case_input)
+        write_xyz(str(self.base_dir / "interpolate.ANI"), case_input, append=True)
 
     def _resolve_structure_path(self, path):
         struct_path = Path(path).expanduser()

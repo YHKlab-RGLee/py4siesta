@@ -63,12 +63,39 @@ class ToolCliTests(unittest.TestCase):
             )
 
             base_dir = root / "11.interpolate_structure"
-            self.assertTrue((base_dir / "01-ratio_0.0000" / "input" / "STRUCT.fdf").is_file())
-            self.assertTrue((base_dir / "02-ratio_1.0000" / "input" / "STRUCT.fdf").is_file())
+            self.assertTrue((base_dir / "01-mode_-1.0000" / "input" / "STRUCT.fdf").is_file())
+            self.assertTrue((base_dir / "02-mode_+1.0000" / "input" / "STRUCT.fdf").is_file())
 
             metadata = json.loads((base_dir / "interpolate_config.json").read_text())
             self.assertEqual(metadata["initial_structure"], str(initial_dir / "STRUCT.fdf"))
             self.assertEqual(metadata["final_structure"], str(final_dir / "STRUCT.fdf"))
+
+            # Distinct endpoints make frame order and extrapolation observable.
+            final_path = final_dir / "STRUCT.fdf"
+            final_struct = operation._read_structure(final_path)
+            final_struct.select_all()
+            final_struct.translate(0.0, 0.0, 2.0)
+            with mock.patch.object(operation, "_read_structure", side_effect=[
+                operation._read_structure(initial_dir / "STRUCT.fdf"), final_struct,
+            ]):
+                operation.run("initial/STRUCT.fdf", "output/STRUCT.fdf", 3, 1)
+
+            lines = (base_dir / "interpolate.ANI").read_text().splitlines()
+            atom_count = len(final_struct)
+            frame_size = atom_count + 2
+            self.assertEqual(len(lines), 5 * frame_size)
+            initial_struct = operation._read_structure(initial_dir / "STRUCT.fdf")
+            for index, shift in enumerate([-1.0, 0.0, 1.0, 2.0, 3.0]):
+                frame = lines[index * frame_size:(index + 1) * frame_size]
+                self.assertEqual(int(frame[0]), atom_count)
+                for atom, row in zip(initial_struct, frame[2:]):
+                    symbol, *coordinates = row.split()
+                    self.assertEqual(symbol, atom.get_symbol())
+                    np.testing.assert_allclose(
+                        np.array(coordinates, dtype=float),
+                        np.array(atom.get_position()) + [0.0, 0.0, shift],
+                        atol=1e-6,
+                    )
 
     def test_parser_accepts_representative_commands(self):
         parser = tool_cli.build_parser()

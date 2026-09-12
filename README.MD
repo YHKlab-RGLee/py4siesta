@@ -229,6 +229,10 @@ For example, division `5` and extrapolate `2` produce modes
 `-2, -1.5, -1, -0.5, 0, +0.5, +1, +1.5, +2`, with folders such as
 `01-mode_-2.0000` and `05-mode_+0.0000`.
 
+Both this menu and `python py4siesta-tool interpolate-structure` also write
+`11.interpolate_structure/interpolate.ANI`: concatenated XYZ frames in case
+order, including both endpoints and any extrapolated structures.
+
 Use `01` → `3` to submit these generated jobs. The equivalent direct CLI
 command is `python py4siesta-tool submit --mode geometry`.
 
