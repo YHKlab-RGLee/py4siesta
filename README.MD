@@ -22,6 +22,7 @@
   - [Configure the Agent](#configure-the-agent)
   - [Run the Agent](#run-the-agent)
   - [Agent Outputs](#agent-outputs)
+- [AI Assistant Skills](#ai-assistant-skills)
 - [Bundled NanoCore](#bundled-nanocore)
 
 The interactive and deterministic interfaces are designed around this basic
@@ -400,6 +401,16 @@ final_input/
 If a scheduler job fails or required SIESTA output is missing, the workflow
 stops and records the error in its JSON state and Markdown summary. Failed
 calculations are not automatically modified or resubmitted.
+
+## AI Assistant Skills
+
+The `py4siesta` skill for Codex provides guidance for preparing, running, and
+analyzing SIESTA cases using existing numbered-menu workflows and direct CLI
+tools. It must be installed separately from the Python package.
+
+With the skill installed, ask Codex to use the `py4siesta` skill and specify
+the calculation directory, desired operation, and input files. This is separate
+from the `py4siesta-agent` interface described above.
 
 ## Bundled NanoCore
 
