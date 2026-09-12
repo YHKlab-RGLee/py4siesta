@@ -1,4 +1,5 @@
 import json
+import operator
 import shutil
 import subprocess
 from pathlib import Path
@@ -12,11 +13,206 @@ from NanoCore import *
 from .utils import copy_contents, last_matching_line, working_dir
 
 
+def initialize_origin(structure, xc, kpoints, slurm, root="."):
+    """Create a complete ``origin`` directory for deterministic workflows."""
+
+    structure_path = Path(structure).expanduser()
+    slurm_path = Path(slurm).expanduser()
+    if not structure_path.is_file():
+        raise FileNotFoundError(f"Structure file does not exist: {structure_path}")
+    if not slurm_path.is_file():
+        raise FileNotFoundError(f"SLURM script does not exist: {slurm_path}")
+
+    try:
+        kpoint_values = [operator.index(value) for value in kpoints]
+    except (TypeError, ValueError) as exc:
+        raise ValueError("K-point sampling must contain exactly three positive integers.") from exc
+    if len(kpoint_values) != 3 or any(value <= 0 for value in kpoint_values):
+        raise ValueError("K-point sampling must contain exactly three positive integers.")
+
+    xc_value = str(xc).upper()
+    if xc_value not in {"LDA", "GGA"}:
+        raise ValueError("Exchange-correlation functional must be either LDA or GGA.")
+
+    root_path = Path(root)
+    origin_dir = root_path / "origin"
+    if origin_dir.exists():
+        raise FileExistsError(f"Refusing to overwrite existing origin directory: {origin_dir}")
+
+    structure_path = structure_path.resolve()
+    slurm_path = slurm_path.resolve()
+    structure_system = s2.read_fdf(str(structure_path))
+    simulation = s2.Siesta(structure_system)
+    simulation.set_option("Name", structure_path.stem)
+    simulation.set_option("Label", structure_path.stem)
+    simulation.set_option("XCfunc", xc_value)
+    simulation.set_option("XCauthor", "CA" if xc_value == "LDA" else "PBE")
+    simulation.set_option("kgrid", kpoint_values)
+
+    # Resolve every required database file before creating origin, so failures do
+    # not leave a partial project behind.
+    simulation.pseudopotential_paths()
+
+    input_dir = origin_dir / "input"
+    origin_dir.mkdir(parents=True)
+    try:
+        input_dir.mkdir()
+        shutil.copy2(slurm_path, origin_dir / slurm_path.name)
+        with working_dir(input_dir):
+            simulation.write_struct()
+            simulation.write_basis()
+            simulation.write_kpt()
+            simulation.write_siesta()
+            copied_psfs = simulation.copy_pseudopotentials()
+    except Exception:
+        shutil.rmtree(origin_dir)
+        raise
+
+    return {
+        "origin_dir": origin_dir,
+        "slurm": origin_dir / slurm_path.name,
+        "input_dir": input_dir,
+        "fdf_files": [
+            input_dir / "RUN.fdf",
+            input_dir / "STRUCT.fdf",
+            input_dir / "BASIS.fdf",
+            input_dir / "KPT.fdf",
+        ],
+        "pseudopotentials": [input_dir / path.name for path in copied_psfs],
+        "xc": xc_value,
+        "kpoints": kpoint_values,
+    }
+
+
+def stage_pseudopotential_database(
+    structure,
+    xc,
+    search_directories,
+    destination,
+):
+    """Collect required local PSF files into a standard functional directory."""
+
+    functional = str(xc).upper()
+    if functional not in {"LDA", "GGA"}:
+        raise ValueError("Exchange-correlation functional must be either LDA or GGA.")
+    system = s2.read_fdf(str(structure))
+    symbols = sorted({atom.get_symbol() for atom in system})
+    directories = [Path(path).expanduser().resolve() for path in search_directories]
+    destination = Path(destination).expanduser().resolve()
+    functional_directory = destination / functional
+    resolved = {}
+    for symbol in symbols:
+        for directory in directories:
+            candidate = directory / ("%s.psf" % symbol)
+            if candidate.is_file():
+                resolved[symbol] = candidate
+                break
+        if symbol not in resolved:
+            raise FileNotFoundError(
+                "Pseudopotential for %s was not found in: %s."
+                % (symbol, ", ".join(str(path) for path in directories))
+            )
+
+    functional_directory.mkdir(parents=True, exist_ok=True)
+    for symbol, source in resolved.items():
+        shutil.copy2(source, functional_directory / ("%s.psf" % symbol))
+    return destination
+
+
+def prepare_geometry_optimization(root=".", dimensionality="2D"):
+    """Create the geometry-optimization case from optimized lattice inputs."""
+
+    root = Path(root).resolve()
+    lattice_base = "02.slab_eos" if dimensionality == "2D" else "02.volume_eos"
+    source = root / lattice_base / "optimized_structure"
+    destination = root / "03.geometry_optimization"
+    if not source.is_dir():
+        raise FileNotFoundError("Optimized lattice input is missing: %s" % source)
+    if destination.exists():
+        raise FileExistsError(
+            "Refusing to overwrite geometry optimization: %s" % destination
+        )
+    shutil.copytree(source, destination)
+    return destination
+
+
+def validate_geometry_optimization(root="."):
+    """Validate the required outputs of a completed geometry optimization."""
+
+    case = Path(root).resolve() / "03.geometry_optimization"
+    out_dir = case / "OUT"
+    normal_exit = out_dir / "0_NORMAL_EXIT"
+    structures = sorted(out_dir.glob("*.STRUCT_OUT"))
+    if not normal_exit.is_file():
+        raise FileNotFoundError(
+            "Geometry optimization is incomplete: %s is missing." % normal_exit
+        )
+    if not structures:
+        raise FileNotFoundError(
+            "Geometry optimization output contains no *.STRUCT_OUT file."
+        )
+    s2.read_struct_out(str(structures[-1]))
+    return {
+        "converged": True,
+        "normal_exit": str(normal_exit),
+        "structure_output": str(structures[-1]),
+    }
+
+
+def generate_final_input(root, geometry_result):
+    """Generate a final reusable SIESTA input from optimized coordinates."""
+
+    root = Path(root).resolve()
+    source = root / "03.geometry_optimization"
+    destination = root / "final_input"
+    if destination.exists():
+        raise FileExistsError("Refusing to overwrite final input: %s" % destination)
+    shutil.copytree(source, destination)
+    out_structure = Path(geometry_result["structure_output"])
+    optimized = s2.read_struct_out(str(out_structure))
+    with working_dir(destination / "input"):
+        s2.Siesta(optimized).write_struct()
+    return destination
+
+
 class SiestaContext:
     def __init__(self):
         self.root = Path.cwd()
         self.origin_dir = self.root / "origin"
         self.struct = s2.read_fdf(self.origin_dir / "input" / "STRUCT.fdf")
+
+
+def sliding_case_label(displacement_mode, components):
+    first, second = np.asarray(components, dtype=float)
+    if displacement_mode == "fractional":
+        return f"fa_{first:+0.4f}-fb_{second:+0.4f}"
+    if displacement_mode == "absolute":
+        return f"x_{first:+0.4f}-y_{second:+0.4f}"
+    raise ValueError(f"Unsupported sliding mode: {displacement_mode}")
+
+
+def sliding_displacement(struct, displacement_mode, components):
+    vector = np.asarray(components, dtype=float)
+    if vector.shape != (2,):
+        raise ValueError("Each sliding vector must contain exactly two in-plane components.")
+
+    if displacement_mode == "fractional":
+        cell = np.array(struct.get_cell(), dtype=float, copy=True)
+        displacement = vector[0] * cell[0] + vector[1] * cell[1]
+        displacement[2] = 0.0
+        return displacement
+
+    if displacement_mode == "absolute":
+        return np.array([vector[0], vector[1], 0.0], dtype=float)
+
+    raise ValueError(f"Unsupported sliding mode: {displacement_mode}")
+
+
+def prepare_sliding_cases(struct, displacement_mode, vectors):
+    return [
+        (sliding_case_label(displacement_mode, vector), sliding_displacement(struct, displacement_mode, vector))
+        for vector in vectors
+    ]
 
 
 class BaseOperation:
@@ -543,6 +739,8 @@ class FitOptimizedStructureOperation:
             title = "Murnaghan EOS fitting"
             calculated_label = "Calculated energy"
             fit_label = "Murnaghan fit"
+            optimized_value = float(opt_volume)
+            optimized_name = "equilibrium_volume_A3"
 
         elif mode == "Polynomial":
             vfit = np.linspace(min(lattice), max(lattice), 100)
@@ -562,6 +760,8 @@ class FitOptimizedStructureOperation:
             title = "Polynomial EOS fitting"
             calculated_label = "Calculated energy"
             fit_label = "Polynomial fit"
+            optimized_value = float(opt_lattice)
+            optimized_name = "optimized_lattice_A"
 
         elif mode == "Distance":
             vfit = np.linspace(min(lattice), max(lattice), 100)
@@ -591,6 +791,8 @@ class FitOptimizedStructureOperation:
             title = "Distance fitting"
             calculated_label = "Calculated energy"
             fit_label = "Polynomial fit"
+            optimized_value = float(opt_distance)
+            optimized_name = "optimized_distance_A"
 
         with working_dir(base_dir):
             plt.figure()
@@ -620,6 +822,13 @@ class FitOptimizedStructureOperation:
             with working_dir(optimized_dir):
                 s2.Siesta(struct).write_struct()
                 shutil.move("STRUCT.fdf", Path("input") / "STRUCT.fdf")
+
+        return {
+            "mode": mode,
+            optimized_name: optimized_value,
+            "optimized_structure": optimized_dir,
+            "figure": base_dir / "eos_fitting.png",
+        }
 
 
 class JobSubmissionOperation:

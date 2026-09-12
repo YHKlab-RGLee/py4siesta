@@ -1,6 +1,6 @@
 # Runtime and execution contract
 
-The command map is based on the bundled `py4siesta/agent_cli.py`, `cli.py`,
+The command map is based on the bundled `py4siesta/tool_cli.py`, `cli.py`,
 `operations.py`, and `post_process.py`. Package version 1.0.0 alone does not identify
 all behavior: record a source commit and dirty status when available, plus the
 imported module location. Recheck relevant help/source if an installed version differs.
@@ -9,7 +9,7 @@ imported module location. Recheck relevant help/source if an installed version d
 
 Use the user-selected environment first, then the external state's saved environment,
 then an executable on PATH. Verify `py4siesta-tool --help` and the selected subcommand's
-`--help`. With a known Python interpreter, `python -m py4siesta.agent_cli --help`
+`--help`. With a known Python interpreter, `python -m py4siesta.tool_cli --help`
 is an equivalent entrypoint. Verify `python -c "import py4siesta; print(py4siesta.__file__)"`
 in that same environment when diagnosing conflicting installs.
 

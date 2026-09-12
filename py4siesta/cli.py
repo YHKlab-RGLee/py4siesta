@@ -3,7 +3,12 @@ import glob
 import numpy as np
 from NanoCore import s2
 
-from .operations import SiestaWorkflow
+from .operations import (
+    SiestaWorkflow,
+    prepare_sliding_cases as _prepare_sliding_cases,
+    sliding_case_label as _sliding_case_label,
+    sliding_displacement as _sliding_displacement,
+)
 from .post_process import generate_pdos_csv, plot_band_structure, plot_pldos
 
 
@@ -219,39 +224,6 @@ def _prompt_atom_selection(struct_length: int, label: str = "atom index range to
     return _prompt_str(
         f"Input {label} [1-{struct_length}, e.g. 20-30]: "
     )
-
-
-def _sliding_case_label(displacement_mode: str, components: np.ndarray) -> str:
-    first, second = np.asarray(components, dtype=float)
-    if displacement_mode == "fractional":
-        return f"fa_{first:+0.4f}-fb_{second:+0.4f}"
-    if displacement_mode == "absolute":
-        return f"x_{first:+0.4f}-y_{second:+0.4f}"
-    raise ValueError(f"Unsupported sliding mode: {displacement_mode}")
-
-
-def _sliding_displacement(struct, displacement_mode: str, components: np.ndarray) -> np.ndarray:
-    vector = np.asarray(components, dtype=float)
-    if vector.shape != (2,):
-        raise ValueError("Each sliding vector must contain exactly two in-plane components.")
-
-    if displacement_mode == "fractional":
-        cell = np.array(struct.get_cell(), dtype=float, copy=True)
-        displacement = vector[0] * cell[0] + vector[1] * cell[1]
-        displacement[2] = 0.0
-        return displacement
-
-    if displacement_mode == "absolute":
-        return np.array([vector[0], vector[1], 0.0], dtype=float)
-
-    raise ValueError(f"Unsupported sliding mode: {displacement_mode}")
-
-
-def _prepare_sliding_cases(struct, displacement_mode: str, vectors):
-    return [
-        (_sliding_case_label(displacement_mode, vector), _sliding_displacement(struct, displacement_mode, vector))
-        for vector in vectors
-    ]
 
 
 def _print_origin_structure(struct) -> None:

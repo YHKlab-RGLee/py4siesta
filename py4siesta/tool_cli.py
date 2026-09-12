@@ -1,4 +1,4 @@
-"""Non-interactive JSON command line interface for agent use."""
+"""Non-interactive JSON command line interface for deterministic tools."""
 
 import argparse
 import json
@@ -9,8 +9,7 @@ import numpy as np
 
 from NanoCore import s2
 
-from .cli import _prepare_sliding_cases
-from .operations import SiestaWorkflow
+from .operations import SiestaWorkflow, initialize_origin, prepare_sliding_cases
 from .post_process import generate_pdos_csv, plot_band_structure, plot_pldos
 
 
@@ -76,6 +75,22 @@ def _scale_mask(values):
     return None if values is None else [int(value) for value in values]
 
 
+def _positive_int(value):
+    parsed = int(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
+def _cmd_init(args):
+    return initialize_origin(
+        structure=args.structure,
+        xc=args.xc,
+        kpoints=args.kpt,
+        slurm=args.slurm,
+    )
+
+
 def _cmd_kpoint_bulk(args):
     _workflow().kpoint_sampling(kpoints=args.kpoints)
     return {"base_dir": "01.kpoint_sampling", "kpoints": args.kpoints}
@@ -106,7 +121,7 @@ def _cmd_eos_slab(args):
 def _cmd_eos_sliding(args):
     workflow = _workflow()
     vectors = [np.array([float(first), float(second)], dtype=float) for first, second in args.vector]
-    sliding_cases = _prepare_sliding_cases(workflow.struct, args.mode, vectors)
+    sliding_cases = prepare_sliding_cases(workflow.struct, args.mode, vectors)
     workflow.eos_sliding(selection=args.selection, sliding_cases=sliding_cases)
     return {
         "base_dir": "02.sliding",
@@ -213,6 +228,26 @@ def build_parser():
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    command = subparsers.add_parser("init", help="Create a complete origin directory.")
+    command.add_argument("--structure", required=True, help="Structure in SIESTA FDF format.")
+    command.add_argument(
+        "--xc",
+        required=True,
+        type=str.lower,
+        choices=["lda", "gga"],
+        help="Exchange-correlation functional.",
+    )
+    command.add_argument(
+        "--kpt",
+        type=_positive_int,
+        nargs=3,
+        required=True,
+        metavar=("KX", "KY", "KZ"),
+        help="Initial Monkhorst-Pack k-point sampling.",
+    )
+    command.add_argument("--slurm", required=True, help="SLURM script copied into origin.")
+    command.set_defaults(func=_cmd_init)
+
     command = subparsers.add_parser("kpoint-bulk", help="Generate bulk k-point sampling cases.")
     command.add_argument("--kpoints", type=int, nargs="+", required=True)
     command.set_defaults(func=_cmd_kpoint_bulk)
@@ -317,19 +352,24 @@ def build_parser():
     return parser
 
 
-def main(argv=None):
+def execute(argv=None):
+    """Run one deterministic tool and return its JSON-compatible payload."""
     parser = build_parser()
     args = parser.parse_args(argv)
     command = args.command
 
     try:
-        payload = _success(command, args.func(args))
+        return _success(command, args.func(args))
     except Exception as exc:
-        print(json.dumps(_failure(command, exc), sort_keys=True), file=sys.stderr)
-        return 1
+        return _failure(command, exc)
 
-    print(json.dumps(payload, sort_keys=True))
-    return 0
+
+def main(argv=None):
+    payload = execute(argv)
+    stream = sys.stdout if payload["ok"] else sys.stderr
+    print(json.dumps(payload, sort_keys=True), file=stream)
+
+    return 0 if payload["ok"] else 1
 
 
 if __name__ == "__main__":

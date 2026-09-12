@@ -4,6 +4,8 @@ from . import io
 from . io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
 from . units import ang2bohr
 from glob import glob
+from pathlib import Path
+import shutil
 
 
 #
@@ -97,6 +99,7 @@ Siesta(atoms)
         else:
             raise ValueError("Invaild AtomsSystem")
 
+        self._params = self._params.copy()
         self._inputs = {}
 
 
@@ -406,6 +409,46 @@ Siesta(atoms)
         #file.write("SaveTotalCharge       F      # SystemLabel.TOCH\n")
         #file.write("SaveInitialChargeDenaisty F  # SystemLabel.RHOINIT\n")
         file.close()
+
+    def pseudopotential_paths(self):
+
+        """Return the configured pseudopotential files required by this system."""
+
+        from NanoCore.env import siesta_psf_location
+
+        xc = str(self._params['XCfunc']).upper()
+        relativistic = self._params['XCrel']
+        if xc not in ('LDA', 'GGA'):
+            raise ValueError("XCfunc must be either LDA or GGA.")
+        if relativistic not in ('non', 'rel'):
+            raise ValueError("XCrel must be either non or rel.")
+
+        psf_dir = Path(siesta_psf_location).expanduser() / xc
+        if relativistic == 'rel':
+            psf_dir = psf_dir / 'rel'
+
+        paths = []
+        for symbol in get_unique_symbs(self._atoms):
+            path = psf_dir / ('%s.psf' % symbol)
+            if not path.is_file():
+                raise FileNotFoundError(
+                    "Pseudopotential for %s was not found: %s" % (symbol, path)
+                )
+            paths.append(path)
+        return paths
+
+    def copy_pseudopotentials(self, destination='.'):
+
+        """Copy all required configured pseudopotentials into *destination*."""
+
+        destination = Path(destination)
+        destination.mkdir(parents=True, exist_ok=True)
+        copied = []
+        for source in self.pseudopotential_paths():
+            target = destination / source.name
+            shutil.copy2(str(source), str(target))
+            copied.append(target)
+        return copied
 
 
     def run(self, mode='SCF', cellparameter=1.0, log=1, mpi=0, nproc=1, psf=1):
@@ -1231,8 +1274,8 @@ def read_fdf(file_name):
     _is_ang_scale = 0; _is_bohr_scale = 0; _is_scaled_ang_scale = 0
     _is_fraction_scale = 0
 
-    f = open(file_name)
-    lines = f.readlines()
+    with open(file_name) as f:
+        lines = f.readlines()
 
     i = 0
     for line in lines:

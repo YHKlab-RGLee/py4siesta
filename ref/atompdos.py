@@ -76,7 +76,7 @@ def find_integral(x, y, xmin, xmax):
     x_sub = x[mask]
     y_sub = y[mask]
     
-    # 적분
+    # Integral
     integral = trapz(y_sub, x_sub)
     
     return integral
@@ -159,6 +159,5 @@ if __name__ == "__main__":
 
 
     main()
-
 
 
