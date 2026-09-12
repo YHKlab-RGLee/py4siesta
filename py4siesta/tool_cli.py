@@ -291,7 +291,7 @@ def build_parser():
     command.set_defaults(func=_cmd_fit_structure)
 
     command = subparsers.add_parser("submit", help="Submit generated jobs with sbatch.")
-    command.add_argument("--mode", choices=["kpt", "opt"], required=True)
+    command.add_argument("--mode", choices=["kpt", "opt", "geometry"], required=True)
     command.set_defaults(func=_cmd_submit)
 
     command = subparsers.add_parser("band", help="Plot a SIESTA band structure.")
@@ -343,10 +343,12 @@ def build_parser():
     command.set_defaults(func=_cmd_move_structure)
 
     command = subparsers.add_parser("interpolate-structure", help="Generate interpolated structures.")
-    command.add_argument("--initial", required=True)
-    command.add_argument("--final", required=True)
-    command.add_argument("--division-npt", type=int, required=True)
-    command.add_argument("--extrapolate-npt", type=int, default=0)
+    command.add_argument("--initial", required=True, help="Initial structure (polar mode -1).")
+    command.add_argument("--final", required=True, help="Final structure (polar mode +1).")
+    command.add_argument("--division-npt", type=int, required=True,
+                         help="Points including both endpoints; use an odd count to include mode 0.")
+    command.add_argument("--extrapolate-npt", type=int, default=0,
+                         help="Extra points per side: N below mode -1 and N above +1 (2N total).")
     command.set_defaults(func=_cmd_interpolate_structure)
 
     return parser
