@@ -200,6 +200,85 @@ For `py4siesta-tool pdos`, pass one or more `--orbital` selections in `atom_or_s
 
 Run `py4siesta-tool --help` or `py4siesta-tool <command> --help` for the full command list and required inputs.
 
+## Codex Skill: Setup and Usage
+
+The bundled [py4siesta skill](Skills/Codex/py4siesta/SKILL.md) lets Codex use the
+existing menus through `py4siesta-tool`. It covers k-point sampling/analysis (1–3),
+geometry optimization (4–8), submission (9–10), post-processing (11–13), and geometry
+utilities (01 → 1/2). It adds instructions and record templates, not a new CLI menu
+or a background service. Your existing calculation workflow stays the same.
+
+### Register once for all projects
+
+First install py4siesta in the Python environment you use for calculations (see
+Quick Start), then confirm `py4siesta-tool --help` works. Registering a skill does
+not install py4siesta, SIESTA, or its external utilities.
+
+From this repository's root, link the complete skill directory into Codex's user
+skill directory (Linux/macOS):
+
+```bash
+mkdir -p "$HOME/.agents/skills"
+# Run only if ~/.agents/skills/py4siesta does not already exist.
+ln -s "$PWD/Skills/Codex/py4siesta" "$HOME/.agents/skills/py4siesta"
+```
+
+If you prefer a standalone copy, use `cp -R Skills/Codex/py4siesta
+"$HOME/.agents/skills/py4siesta"` instead, also with an unused destination. Copy the
+whole directory, not just SKILL.md. A link follows checkout updates and requires
+keeping the checkout at that path; a copy must be updated separately. Preserve any
+existing installation before replacing it.
+
+In Codex, use `/skills` to check for `py4siesta`, then invoke it as `$py4siesta`.
+If it does not appear, restart Codex. These locations and invocation methods follow
+the [official Codex skill documentation](https://learn.chatgpt.com/docs/build-skills).
+You can also ask Codex to register the local directory for you. `$skill-creator`
+is useful for adapting the skill; you do not need to recreate it to register it.
+
+### Give Codex a calculation task
+
+Start Codex in your calculation directory, or give its absolute path. On first use,
+specify the Python environment or source checkout if `py4siesta-tool` is not on PATH.
+Prepare the usual `origin/input/STRUCT.fdf` and calculation inputs for generation
+workflows; post-processing uses its matching output files instead.
+
+Example prompts (replace paths and scientific parameters with your own):
+
+```text
+$py4siesta In /work/diamond, prepare bulk geometry-optimization cases using
+menu 4 with scaling in x, y and z. Do not submit jobs yet.
+
+$py4siesta In /work/interface, use menu 01 → 2 to interpolate between
+initial/STRUCT.fdf and output/STRUCT.fdf: 5 points including endpoints,
+no extrapolation. Check the generated structures.
+
+$py4siesta Analyze completed k-point cases in /work/diamond with menu 3,
+using a 0.01 eV tolerance. Report missing or unconverged calculations.
+
+$py4siesta Resume my previous geometry-optimization task in /work/diamond.
+Read its history and check existing jobs before continuing.
+```
+
+Codex selects the menu recipe, checks inputs and existing outputs, runs the program,
+and verifies results. Case generation can recreate existing output directories;
+job submission must be part of your request. A generated structure or submitted job
+is not yet a completed, converged SIESTA calculation.
+
+### Personal history and reusable workflows
+
+The skill instructs Codex to keep `config.json`, `history/`, `memory/`, and personal
+`workflows/` outside this public repository. The default is
+`~/.local/state/py4siesta-skill`; set `PY4SIESTA_SKILL_STATE` before starting Codex or
+provide an external directory in your prompt to choose another location.
+
+For execution tasks, the agent records attempts and results using the bundled
+templates. Verified lessons can produce scoped personal workflow revisions; unknown
+failure causes remain in history. Your current request overrides remembered defaults.
+Public recipes and installed skill instructions are not rewritten during calculations.
+The agent reports if filesystem permissions prevent saving records. No records are
+written merely by registering the skill, and no learning continues after the session
+ends. This is file-based reuse of experience, not model retraining.
+
 ## Bundled NanoCore
 
 This project is based on `NanoCore`, an older version of the ongoing [`OORINano`](https://github.com/yhkimlab/OORINano) project. `NanoCore` is imported locally from this repository.

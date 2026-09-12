@@ -106,6 +106,14 @@ After making changes, agents should verify:
 * unrelated files were not modified,
 * `AGENTS.md` was not changed.
 
+## Agent Skills Development
+
+* Distribute reusable agent skills within `Skills/Codex/` in this repository, suitable for global registration by users.
+* Base skill workflows on existing numbered CLI menu functionality. Document menu mappings, required inputs, execution steps, and output validation.
+* Use existing py4siesta interfaces, preferring `py4siesta-tool` for non-interactive execution. Verify the executable or source path and Python environment before use; skill registration does not install py4siesta.
+* Keep skill development isolated from existing code, menu behavior, and project layout outside `Skills/Codex/`.
+* Keep personal history, memory, and adapted workflows outside the public repository. Incorporate only verified lessons into workflows, recording their scope, applicable version, and supporting evidence.
+
 ## Non-Negotiable Constraints
 
 * Never modify `AGENTS.md`.
@@ -113,4 +121,3 @@ After making changes, agents should verify:
 * Never change unrelated functionality when adding or updating one feature.
 * Preserve the numbered-menu CLI structure.
 * Menu-number changes must be limited to menu assignment and documentation consistency.
-
