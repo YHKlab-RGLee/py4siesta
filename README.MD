@@ -218,6 +218,19 @@ Geometry-generation submenu:
 | --- | --- | --- |
 | `1` | Move structure | Translate the full structure by a user-defined displacement vector and write a new `STRUCT.fdf`. |
 | `2` | Interpolate structure | Generate interpolated structures between two `STRUCT.fdf` files, with optional extrapolated points. |
+| `3` | Job submission | Submit `slm_*` scripts in generated cases under `11.interpolate_structure` using `sbatch`. |
+
+In `python py4siesta` → `01` → `2`, case folders use polar mode labels:
+initial = `-1`, final = `+1`, and `0` is their midpoint (the para phase when
+the input pair has the corresponding symmetry). The division count includes
+both endpoints; choose an odd count to include mode `0`. Extrapolate `N` adds
+**N points on each side**, below `-1` and above `+1`, for `2N` extra cases.
+For example, division `5` and extrapolate `2` produce modes
+`-2, -1.5, -1, -0.5, 0, +0.5, +1, +1.5, +2`, with folders such as
+`01-mode_-2.0000` and `05-mode_+0.0000`.
+
+Use `01` → `3` to submit these generated jobs. The equivalent direct CLI
+command is `python py4siesta-tool submit --mode geometry`.
 
 ## Running Modes
 

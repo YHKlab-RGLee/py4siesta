@@ -43,6 +43,7 @@ MENU = """ ======================= K-point Sampling ========================
 GENERATE_GEOMETRIES_MENU = """ ======================= Generate Geometries ======================
  1) Move structure
  2) Interpolate structure
+ 3) Job submission (generated geometries)
 
  0) Quit
 """
@@ -247,16 +248,21 @@ def _run_generate_geometries_menu(workflow) -> None:
 
     elif mode == 2:
         _show_section("Interpolate structure")
-        initial_path = _prompt_str("Input initial structure path (STRUCT.fdf): ")
-        final_path = _prompt_str("Input final structure path (STRUCT.fdf): ")
-        division_npt = _prompt_int("Input division npt (>=2): ")
-        extrapolate_npt = _prompt_int("Input extrapolate npt (0 for none): ")
+        initial_path = _prompt_str("Input initial structure path (mode -1): ")
+        final_path = _prompt_str("Input final structure path (mode +1): ")
+        print("Mode 0 is the midpoint; choose an odd division npt to include it.")
+        division_npt = _prompt_int("Input division npt (>=2, including both endpoints): ")
+        extrapolate_npt = _prompt_int("Input extrapolate npt per side (N below -1 and N above +1; 0 for none): ")
         workflow.interpolate(
             initial_path=initial_path,
             final_path=final_path,
             division_npt=division_npt,
             extrapolate_npt=extrapolate_npt,
         )
+
+    elif mode == 3:
+        _show_section("Job submission: 11.interpolate_structure")
+        workflow.qsub("geometry")
 
     elif mode == 0:
         print("Exit Generate Geometries.")

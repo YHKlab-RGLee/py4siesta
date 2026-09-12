@@ -840,6 +840,10 @@ class JobSubmissionOperation:
             targets = sorted(self.context.root.glob("01.*"))
         elif mode == "opt":
             targets = sorted(self.context.root.glob("02.*"))
+        elif mode == "geometry":
+            targets = [self.context.root / InterpolateStructureOperation.base_dirname]
+            if not targets[0].is_dir():
+                raise FileNotFoundError(f"Generated geometry directory does not exist: {targets[0]}")
         else:
             targets = []
 
@@ -931,8 +935,9 @@ class InterpolateStructureOperation(BaseOperation):
             return division_ratios
 
         step = division_ratios[1] - division_ratios[0]
+        initial_extrapolated = [-step * index for index in range(int(extrapolate_npt), 0, -1)]
         extrapolated = [1.0 + step * index for index in range(1, int(extrapolate_npt) + 1)]
-        return division_ratios + extrapolated
+        return initial_extrapolated + division_ratios + extrapolated
 
     def write_metadata(self, initial_path, final_path, division_npt, extrapolate_npt=0):
         metadata = {
@@ -941,6 +946,8 @@ class InterpolateStructureOperation(BaseOperation):
             "final_structure": str(Path(final_path).expanduser()),
             "division_npt": int(division_npt),
             "extrapolate_npt": int(extrapolate_npt),
+            "extrapolate_npt_scope": "per_side",
+            "polar_mode": {"initial": -1.0, "final": 1.0, "mapping": "2 * ratio - 1"},
         }
         Path("interpolate_config.json").write_text(json.dumps(metadata, indent=2) + "\n")
 
@@ -953,7 +960,8 @@ class InterpolateStructureOperation(BaseOperation):
 
     def case_name(self, index, case_parameter):
         ratio, _, _ = case_parameter
-        return f"{index:02d}-ratio_{ratio:0.4f}"
+        polar_mode = 2.0 * ratio - 1.0
+        return f"{index:02d}-mode_{polar_mode:+.4f}"
 
     def build_case_input(self, case_parameter):
         ratio, initial_struct, final_struct = case_parameter
@@ -1009,8 +1017,8 @@ class SiestaWorkflow:
 
     def interpolate(self, initial_path, final_path, division_npt, extrapolate_npt=0):
         return self._interpolate_structure.run(
-            initial_path=initial_path,
-            final_path=final_path,
+            initial_path=Path(initial_path).expanduser().resolve(),
+            final_path=Path(final_path).expanduser().resolve(),
             division_npt=division_npt,
             extrapolate_npt=extrapolate_npt,
         )
