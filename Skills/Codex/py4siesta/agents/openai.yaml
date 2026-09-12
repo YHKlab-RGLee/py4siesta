@@ -1,0 +1,4 @@
+interface:
+  display_name: "py4siesta"
+  short_description: "Run menu-based SIESTA calculation workflows"
+  default_prompt: "Use $py4siesta to perform my calculation task with the matching menu workflow and record verified lessons."

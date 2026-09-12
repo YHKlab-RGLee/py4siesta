@@ -1,15 +1,23 @@
 import contextlib
 import io
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 import numpy as np
 
 from py4siesta import post_process, tool_cli
-from py4siesta.operations import KPointAnalysisOperation, KPointSamplingOperation, SiestaWorkflow, siesta_eos
+from py4siesta.operations import (
+    InterpolateStructureOperation,
+    KPointAnalysisOperation,
+    KPointSamplingOperation,
+    SiestaWorkflow,
+    siesta_eos,
+)
 from py4siesta.post_process import _friendly_pdos_label, _plot_pdos, _selection_from_orbital_token
 
 
@@ -29,6 +37,38 @@ class ToolCliTests(unittest.TestCase):
         self.assertEqual(sorted(case_names), case_names)
         self.assertEqual(KPointAnalysisOperation._k_value_from_case_name(case_names[-1]), 10)
         self.assertEqual(KPointAnalysisOperation._k_value_from_case_name("10+10+10"), 10)
+
+    def test_interpolation_resolves_relative_inputs_from_execution_root(self):
+        fixture_origin = Path(__file__).parent / "diamond" / "origin"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            origin = root / "origin"
+            shutil.copytree(fixture_origin, origin)
+
+            initial_dir = root / "initial"
+            final_dir = root / "output"
+            initial_dir.mkdir()
+            final_dir.mkdir()
+            shutil.copy2(origin / "input" / "STRUCT.fdf", initial_dir / "STRUCT.fdf")
+            shutil.copy2(origin / "input" / "STRUCT.fdf", final_dir / "STRUCT.fdf")
+
+            operation = InterpolateStructureOperation(
+                SimpleNamespace(root=root, origin_dir=origin)
+            )
+            operation.run(
+                initial_path="initial/STRUCT.fdf",
+                final_path="output/STRUCT.fdf",
+                division_npt=2,
+            )
+
+            base_dir = root / "11.interpolate_structure"
+            self.assertTrue((base_dir / "01-ratio_0.0000" / "input" / "STRUCT.fdf").is_file())
+            self.assertTrue((base_dir / "02-ratio_1.0000" / "input" / "STRUCT.fdf").is_file())
+
+            metadata = json.loads((base_dir / "interpolate_config.json").read_text())
+            self.assertEqual(metadata["initial_structure"], str(initial_dir / "STRUCT.fdf"))
+            self.assertEqual(metadata["final_structure"], str(final_dir / "STRUCT.fdf"))
 
     def test_parser_accepts_representative_commands(self):
         parser = tool_cli.build_parser()

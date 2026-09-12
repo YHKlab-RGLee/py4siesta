@@ -870,6 +870,20 @@ class MoveStructureOperation:
 class InterpolateStructureOperation(BaseOperation):
     base_dirname = "11.interpolate_structure"
 
+    def _resolve_structure_path(self, path):
+        struct_path = Path(path).expanduser()
+        if not struct_path.is_absolute():
+            struct_path = self.context.root / struct_path
+        return struct_path.resolve()
+
+    def run(self, initial_path, final_path, division_npt, extrapolate_npt=0):
+        return super().run(
+            initial_path=self._resolve_structure_path(initial_path),
+            final_path=self._resolve_structure_path(final_path),
+            division_npt=division_npt,
+            extrapolate_npt=extrapolate_npt,
+        )
+
     @staticmethod
     def _read_structure(path):
         struct_path = Path(path).expanduser()
