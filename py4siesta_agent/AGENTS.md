@@ -16,6 +16,17 @@ Do not modify the project-level `AGENTS.md`.
 orchestrates existing scientific and deterministic functionality exposed by
 `NanoCore`, `py4siesta`, and `py4siesta-tool`.
 
+This interface executes predefined tasks in loops: run an allowed step,
+validate its result, and select the next allowed step or stop. Keep its autonomy
+within explicit task boundaries, branches, and stopping conditions. Broader
+workflow creation and progressive improvement of personal memory and workflow
+registries currently belong to the external LLM assistant/skill, which may
+invoke this agent for a predefined task.
+
+Compose existing operations through public interfaces; calling a numbered menu
+is not required. Menu workflows are initial examples. Do not implement or
+modify core scientific or deterministic tool functionality during execution.
+
 The agent package must not reimplement calculation, structure-processing,
 file-management, or other deterministic domain functionality that already
 exists in a lower layer. Reuse such functionality through stable, clearly
@@ -28,7 +39,11 @@ a dependency of `NanoCore`, `py4siesta`, or `py4siesta-tool`.
 
 Before implementing a new agent or workflow, verify that every required
 scientific and deterministic operation is already available through a suitable
-public interface in `py4siesta` or `py4siesta-tool`.
+public interface in `NanoCore`, `py4siesta`, or `py4siesta-tool`.
+
+First check whether the task can be handled by a new composition of existing
+operations within the predefined task scope. Absence of a matching menu entry
+or complete workflow does not by itself mean a lower-layer operation is missing.
 
 If the available code or public interfaces are insufficient, stop the agent
 implementation. Do not work around the limitation, reproduce the missing
@@ -36,7 +51,7 @@ behavior in `py4siesta_agent`, or modify a lower layer as an unrequested part
 of the agent task.
 
 Report the gap to the user and recommend the specific functionality that must
-first be added to `py4siesta` or exposed through `py4siesta-tool`. The
+first be added to `NanoCore` or `py4siesta`, or exposed through `py4siesta-tool`. The
 recommendation should identify:
 
 * the missing deterministic operation;
@@ -46,7 +61,9 @@ recommendation should identify:
 * how the future agent should call it once it is available.
 
 Resume agent implementation only after the required lower-layer functionality
-has been implemented or the user explicitly expands the task to include it.
+has been implemented. Implementing a missing operation requires a separate,
+explicitly requested lower-layer development task; it is not part of an agent's
+runtime loop or autonomous workflow improvement.
 
 ## Initial Architecture
 
@@ -59,9 +76,11 @@ AgentRouter
     ↓
 Selected specialized agent
     ↓
-Tool or workflow execution
+Execute allowed tool/workflow step ←─┐
+    ↓                               │
+Validate result and choose next step┘
     ↓
-Result
+Result or defined stop/failure
 ```
 
 `AgentRouter` is responsible only for interpreting a request, classifying it,
@@ -139,7 +158,8 @@ a domain-specific name is available.
    public interfaces.
 5. Keep agent tool adapters thin; adapters translate inputs and outputs but do
    not implement scientific operations.
-6. Make agent inputs, outputs, validation rules, and failure states explicit.
+6. Make agent inputs, outputs, allowed loop steps and branches, validation rules,
+   stopping conditions, and failure states explicit.
 7. Prefer simple data structures and direct control flow until greater
    abstraction is justified by working features.
 8. Preserve existing `py4siesta` and `py4siesta-tool` behavior and interfaces.

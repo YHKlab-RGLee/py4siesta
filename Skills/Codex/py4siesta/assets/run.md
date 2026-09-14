@@ -5,9 +5,9 @@
 - Project / host / absolute calculation cwd:
 - Python / executable / imported source path:
 - Source commit, dirty status, or source fingerprint:
-- Recipe ID / base revision / personal revision:
+- Workflow ID / optional base recipe revision / personal revision:
 - Inputs, hashes, units and scientific settings:
-- Planned menu steps / exact argument lists:
+- Planned operations / exact command arguments or public API calls / tool versions:
 - Expected outputs / overwrite and submission scope:
 - Completion criteria:
 - Status: planned | running | waiting | failed | complete
@@ -16,7 +16,7 @@
 
 ### Attempt 01
 
-- Time / step / cwd / exact command arguments:
+- Time / step / cwd / exact command arguments or public API call:
 - Changed condition and reason, if retry:
 - Exit status / stdout and stderr paths / JSON result:
 - Scheduler IDs and case mapping, if submitted:

@@ -23,7 +23,7 @@ Create only the files needed for a task, retaining all existing state:
   memory/preferences.md
   memory/environment.md
   memory/lessons/<lesson-id>.md
-  workflows/<recipe-id>/<revision-id>.md
+  workflows/<workflow-id>/<revision-id>.md
 ```
 
 Record configuration as JSON with `schema_version: 1`, an absolute `python` path,
@@ -41,9 +41,13 @@ or references, not secrets or unrelated user data.
 ## Retrieve and resume
 
 Read config, relevant scoped preferences/environment, then search lessons and personal
-workflows by recipe ID, project path, error signature, and source revision. Do not load
+workflows by goal, operations, workflow/recipe ID, project path, error signature,
+and source revision. The existing `workflows/` directory serves as the personal
+registry; retain existing paths and IDs, and do not require a menu number or a new
+database. Search revision metadata to find candidates. Do not load
 all historical logs. A personal workflow applies only if its declared scope matches and
-its base revision is compatible. On a base change, compare the affected instructions;
+its tool interfaces and any base revision are compatible. On a tool or base change,
+compare the affected contracts and instructions;
 retain the old revision but revalidate the lesson before applying it.
 
 History preserves the original plan plus chronological attempts; append corrections
@@ -53,13 +57,19 @@ with the scheduler before doing anything that could submit it again.
 
 ## Learn and promote
 
-1. Log a failure, hypothesis, changed condition, and observed outcome in history.
+1. Record the goal, selected or newly composed workflow, and observed outcomes in
+   history. For failures, also log the hypothesis and changed condition. Successful
+   new compositions can be registered without first encountering a failure.
 2. Keep untested hypotheses there. Only demonstrated fixes become `verified` lessons
    using [memory.md](../assets/memory.md). Explicit user preferences may be recorded
    as `user-stated`, with the request as evidence, without a calculation experiment.
-3. Save an adapted recipe using [workflow.md](../assets/workflow.md) under external
+3. Save a new or adapted workflow using [workflow.md](../assets/workflow.md) under external
    `workflows/`, with a new unique revision and links to prior revision and evidence.
-   Start new compositions as `draft`; mark `validated` only for the steps actually tested.
+   Start new compositions as `draft`; record validation per step and keep partially
+   tested compositions as drafts. Mark a revision `validated` only when its declared
+   completion criteria are met. A preparation-only workflow may be validated for
+   preparation without claiming completed calculations. Base recipes are optional;
+   record the constituent public operations and their versions for every revision.
 4. Record the revision in the run and explain what changed. Never edit the installed
    SKILL.md or public recipes as a side effect of calculation work. Shared improvements
    require a separate development task.

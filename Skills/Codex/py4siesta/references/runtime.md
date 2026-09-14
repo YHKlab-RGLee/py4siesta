@@ -19,6 +19,22 @@ source path from a globally copied skill's ancestors. If imports fail, identify 
 missing environment/dependency; skill registration does not install dependencies.
 Do not change environments or install software unless included in the user's task.
 
+## Compose through verified public interfaces
+
+Discover operations from the selected installation's help, public API documentation,
+and relevant source. The menu map is an example index, not the available API boundary.
+For direct NanoCore calls, verify the imported module path in the selected Python
+environment and inspect the callable's signature, input types, units, outputs, and
+side effects before use. Do not guess imports or use private internals to bypass a
+missing public operation. Record exact calls and the installed source version.
+
+Connect compatible outputs and inputs, making units, paths, prerequisites, validation,
+and stopping conditions explicit. Apply each operation's own contract: the command
+constraints below describe the bundled CLI workflows, not every NanoCore call.
+A new combination does not require a matching menu entry. A missing scientific or
+deterministic operation must be reported for separate development, not implemented
+inside a workflow script.
+
 ## Inputs and outputs
 
 - All workflow-backed commands, including analysis, submission, move, and
@@ -35,7 +51,7 @@ Do not change environments or install software unless included in the user's tas
   progress before the terminal JSON object; do not parse all stdout as a single JSON
   document. Preserve logs and inspect the terminal payload and exit status together.
   Argument-parser failures may be plain text rather than JSON.
-- Verify file existence and contents using the specific recipe, and report missing
+- Verify file existence and contents using the selected operation/workflow contract, and report missing
   external utilities. Local SIESTA utility configuration is in `NanoCore/env.py`.
 - None of the preparation commands itself executes SIESTA. Job execution depends on
   the user's scheduler and scripts. Never present prepared inputs as optimized results.

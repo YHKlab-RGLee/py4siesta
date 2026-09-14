@@ -11,8 +11,12 @@ The project provides the following user-facing interfaces:
 The project follows a layered architecture:
 
 * `NanoCore` contains reusable core scientific functionality.
-* `py4siesta` and `py4siesta-tool` apply NanoCore functionality through GUI/menu-based and CLI-based interfaces.
-* `py4siesta-agent` orchestrates existing NanoCore and py4siesta tools and must not reimplement their underlying functionality.
+* `py4siesta-tool` exposes reusable deterministic operations using NanoCore functionality.
+* `py4siesta` provides user-facing numbered-menu workflows that compose these operations.
+* `py4siesta-agent` composes existing operations in loops for predefined tasks, with decisions restricted to the task's allowed steps and branches.
+* An LLM assistant/skill has broader responsibility for composing and progressively improving workflows using existing operations and accumulated personal memory and workflow registries. It may use `py4siesta-agent` to execute a predefined task.
+
+This is a hierarchy of responsibilities, not a requirement to call through the GUI/menu interface. Both AI modes may use explicit public NanoCore and py4siesta-tool interfaces directly. Existing menu workflows are initial examples, not limits on possible compositions. Neither AI mode implements or modifies core scientific or deterministic tool functionality as part of workflow execution or improvement.
 
 All GUI/menu-based functionality in `py4siesta` is accessed through numbered menu entries. Each feature should be implemented as a clearly separated functionality and exposed through the menu system using a menu number.
 
@@ -48,7 +52,7 @@ Do not edit, rewrite, reformat, rename, move, delete, or automatically update th
    * Avoid broad refactoring unless it is explicitly required for the requested change.
    * Do not change the behavior of existing functions while implementing a new feature.
    * Core scientific or deterministic workflow functionality must not be duplicated inside py4siesta-agent.
-   * If an agent requires a missing reusable operation, implement that operation first in NanoCore, py4siesta, or py4siesta-tool, as appropriate, and expose it to the agent through a thin interface.
+   * First distinguish a new composition of existing operations from a genuinely missing core/tool operation. AI modes may compose existing operations within their task scope. If an operation is missing, report the gap and required interface; lower-layer implementation is a separate, explicitly requested development task, not autonomous workflow improvement.
 
 4. Maintain backward compatibility.
 
@@ -99,6 +103,7 @@ Do not edit, rewrite, reformat, rename, move, delete, or automatically update th
 
    * Keep agent-specific code isolated within `py4siesta-agent`.
    * Use existing NanoCore, py4siesta, and py4siesta-tool interfaces.
+   * Keep `py4siesta-agent` loops within predefined tasks, allowed branches, validation rules, and stopping conditions. Open-ended workflow creation and registry improvement currently belong to the LLM assistant/skill, not this agent interface.
    * Do not implement core scientific functionality inside the agent layer.
    * Do not introduce agent-framework or LLM dependencies into NanoCore, py4siesta, or py4siesta-tool.
    * Preserve the independent operation of all non-agent interfaces.
@@ -174,10 +179,12 @@ After making changes, agents should verify:
 ## Agent Skills Development
 
 * Distribute reusable agent skills within `Skills/Codex/` in this repository, suitable for global registration by users.
-* Base skill workflows on existing numbered CLI menu functionality. Document menu mappings, required inputs, execution steps, and output validation.
+* Treat existing numbered-menu workflows as verified initial examples, not mandatory execution paths or a closed set of workflows. Document menu mappings where applicable, required inputs, tool interfaces, execution steps, and output validation.
 * Use existing py4siesta interfaces, preferring `py4siesta-tool` for non-interactive execution. Verify the executable or source path and Python environment before use; skill registration does not install py4siesta.
+* Let the LLM assistant/skill retrieve, reuse, compose, and progressively improve workflows for the user's goal using existing public NanoCore and py4siesta-tool operations. Workflow definitions and glue code may connect operations, inputs, outputs, branches, and validation steps; they must not implement or modify core scientific or deterministic tool functionality.
 * Keep skill development isolated from existing code, menu behavior, and project layout outside `Skills/Codex/`.
 * Keep personal history, memory, and adapted workflows outside the public repository. Incorporate only verified lessons into workflows, recording their scope, applicable version, and supporting evidence.
+* Use personal memory and the workflow registry to retrieve prior experience, adapt or create a composition, validate its execution, and register verified revisions with their inputs, outputs, tool versions, applicability, and evidence. Keep failed or unverified attempts in history without treating them as validated workflows. Preserve prior revisions and follow the current user's instructions over remembered defaults.
 
 ## Non-Negotiable Constraints
 

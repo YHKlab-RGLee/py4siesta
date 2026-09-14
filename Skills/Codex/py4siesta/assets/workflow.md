@@ -1,9 +1,10 @@
 # Personal workflow
 
-- Recipe ID / unique revision ID / date:
+- Workflow ID (retain existing recipe IDs) / unique revision ID / date:
 - Status: draft | validated | superseded
-- Scope and supported menus:
-- Base recipe path, revision and fingerprint:
+- Goal, applicability, and menu mappings (if any):
+- Base recipe path, revision and fingerprint (if any):
+- Constituent public operations / tool versions and source fingerprints:
 - Parent personal revision:
 - Supporting run IDs / verified lessons:
 - Change and reason:
@@ -15,8 +16,12 @@ scientific assumptions and required external utilities.
 
 ## Steps
 
-List numbered-menu mappings, real commands and per-step validation. Distinguish
-preparation, submission, completion monitoring and analysis. Mark untested steps.
+List real commands or verified public API calls, their input/output connections,
+units, prerequisites, allowed branches, stopping conditions, and per-step validation.
+Include numbered-menu mappings only where applicable. Distinguish
+preparation, submission, completion monitoring and analysis. Mark untested steps and retain draft status until the declared completion criteria
+are validated. Glue code must only compose existing operations, not implement core
+scientific or deterministic tool functionality.
 
 ## Outputs and completion criteria
 

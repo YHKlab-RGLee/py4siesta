@@ -1,5 +1,9 @@
 # Numbered menus and recipes
 
+These bundled workflows are initial examples, not a complete catalog or a requirement
+to execute through menus. Reuse their applicable input and validation constraints
+when composing new workflows.
+
 Each command below follows `py4siesta-tool`. Read current command help for arguments.
 Menu `01` is distinct from menu `1`. Menus `0` exit and have no calculation recipe.
 

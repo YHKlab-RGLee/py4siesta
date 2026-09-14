@@ -17,12 +17,12 @@
   - [Utility](#utility)
 - [Running Modes](#running-modes)
 - [Direct JSON Tools](#direct-json-tools)
+- [Codex Skill: Setup and Usage](#codex-skill-setup-and-usage)
 - [AI-Agent Interface](#ai-agent-interface)
   - [Install Agent Support](#install-agent-support)
   - [Configure the Agent](#configure-the-agent)
   - [Run the Agent](#run-the-agent)
   - [Agent Outputs](#agent-outputs)
-- [AI Assistant Skills](#ai-assistant-skills)
 - [Bundled NanoCore](#bundled-nanocore)
 
 The interactive and deterministic interfaces are designed around this basic
@@ -74,13 +74,14 @@ Or run it directly from the repository root:
 python -m py4siesta
 ```
 
-The project has three separate user interfaces:
+The project has three program interfaces and an additional LLM assistant/skill mode:
 
-| Interface | Purpose | Status |
-| --- | --- | --- |
-| `python py4siesta` | Interactive GUI/menu-based workflow. | Available |
-| `py4siesta-tool <command> [options]` | Direct, deterministic CLI tool invocation with JSON output. | Available |
-| `py4siesta-agent "<request>"` | Natural-language AI-agent orchestration over existing tools. | Initial DFT setup workflow available |
+| Interface / Mode | Purpose | Workflow scope | Status |
+| --- | --- | --- | --- |
+| `python py4siesta` | Interactive GUI/menu-based usage. | The user selects an existing numbered-menu workflow and supplies its inputs. | Available |
+| `py4siesta-tool <command> [options]` | Direct, deterministic CLI tools with JSON output. | The user or a script invokes specific operations with explicit arguments. | Available |
+| `py4siesta-agent "<request>"` | AI execution of predefined tasks requested in natural language. | Runs tools, checks results, and chooses the next step within the task's defined branches and stopping conditions. | Under development; initial DFT setup workflow available |
+| LLM assistant with the `py4siesta` skill | Composes and improves workflows for the user's goal using existing NanoCore and py4siesta-tool operations. | Uses menu workflows as initial examples, can create new combinations, and accumulates validated revisions in personal memory and workflow registries. AI composes existing operations; it does not implement core functionality. | Codex skill available; [separate registration required](#codex-skill-setup-and-usage) |
 
 After installation, the equivalent entry points are `py4siesta`, `py4siesta-tool`, and `py4siesta-agent`.
 
@@ -364,6 +365,7 @@ Public recipes and installed skill instructions are not rewritten during calcula
 The agent reports if filesystem permissions prevent saving records. No records are
 written merely by registering the skill, and no learning continues after the session
 ends. This is file-based reuse of experience, not model retraining.
+
 ## AI-Agent Interface
 
 The agent interface currently supports preparing a complete SIESTA DFT setup,
@@ -499,16 +501,6 @@ final_input/
 If a scheduler job fails or required SIESTA output is missing, the workflow
 stops and records the error in its JSON state and Markdown summary. Failed
 calculations are not automatically modified or resubmitted.
-
-## AI Assistant Skills
-
-The `py4siesta` skill for Codex provides guidance for preparing, running, and
-analyzing SIESTA cases using existing numbered-menu workflows and direct CLI
-tools. It must be installed separately from the Python package.
-
-With the skill installed, ask Codex to use the `py4siesta` skill and specify
-the calculation directory, desired operation, and input files. This is separate
-from the `py4siesta-agent` interface described above.
 
 ## Bundled NanoCore
 
