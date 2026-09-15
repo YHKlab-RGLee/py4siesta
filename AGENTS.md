@@ -183,8 +183,26 @@ After making changes, agents should verify:
 * Use existing py4siesta interfaces, preferring `py4siesta-tool` for non-interactive execution. Verify the executable or source path and Python environment before use; skill registration does not install py4siesta.
 * Let the LLM assistant/skill retrieve, reuse, compose, and progressively improve workflows for the user's goal using existing public NanoCore and py4siesta-tool operations. Workflow definitions and glue code may connect operations, inputs, outputs, branches, and validation steps; they must not implement or modify core scientific or deterministic tool functionality.
 * Keep skill development isolated from existing code, menu behavior, and project layout outside `Skills/Codex/`.
-* Keep personal history, memory, and adapted workflows outside the public repository. Incorporate only verified lessons into workflows, recording their scope, applicable version, and supporting evidence.
-* Use personal memory and the workflow registry to retrieve prior experience, adapt or create a composition, validate its execution, and register verified revisions with their inputs, outputs, tool versions, applicability, and evidence. Keep failed or unverified attempts in history without treating them as validated workflows. Preserve prior revisions and follow the current user's instructions over remembered defaults.
+* Keep personal state outside the public repository and installed skill tree.
+  Persist only information that changes future decisions, validates a meaningful
+  workflow improvement, or enables safe resumption. Repeated unchanged success
+  requires no new persistent record, unless the user requests an audit trail.
+* Let workflows own reusable execution procedures and validation conditions.
+  Create revisions only for meaningful changes; preserve previous revisions and
+  evidence, but retrieve only the compatible current procedure for routine work.
+  Do not maintain a separate duplicate collection of procedural lessons.
+* Keep memory limited to explicit user preferences, verified environment facts,
+  and concise nonduplicate observations of friction. Observations describe the
+  attempted task, limitation, actual workaround or failure, and minimal evidence;
+  successful but inefficient work also qualifies. Do not propose implementations,
+  assign architectural ownership, design APIs, or prioritize development here.
+* Retain history only for requested auditing, safe resumption, uncertain submission
+  status, continuing investigation, or necessary validation evidence. Reference
+  existing calculation outputs/logs rather than copying them. Preserve evidence
+  already retained; do not automatically delete prior records.
+* Retrieve only task-relevant state. Do not read all historical revisions, logs,
+  memories, or observations at startup. Current user instructions take precedence
+  over remembered defaults; unverified attempts must not become validated workflows.
 
 ## Non-Negotiable Constraints
 

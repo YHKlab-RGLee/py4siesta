@@ -6,12 +6,12 @@
 - Base recipe path, revision and fingerprint (if any):
 - Constituent public operations / tool versions and source fingerprints:
 - Parent personal revision:
-- Supporting run IDs / verified lessons:
+- Minimal validation evidence (existing output/log path or run ID):
 - Change and reason:
 
 ## Inputs and prerequisites
 
-Record absolute execution directory, input formats, units, supported tool version,
+Describe how to select the execution directory, input formats, units, supported tool version,
 scientific assumptions and required external utilities.
 
 ## Steps

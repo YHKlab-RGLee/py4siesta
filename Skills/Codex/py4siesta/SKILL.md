@@ -25,14 +25,15 @@ Follow the user's requested scope and the working project's instructions.
 2. Read [runtime.md](references/runtime.md). Verify the executable/Python environment
    and actual command help before writing calculation files.
 3. Read [state.md](references/state.md). For execution tasks, select the external
-   state directory, load only relevant memories and workflow revisions, and create
-   a run record. Explanation-only requests do not create persistent records.
+   state directory and load only relevant memories and workflow revisions. Persist
+   only useful new information or required resume/validation evidence; routine
+   unchanged success creates no new record. Explanation-only requests create none.
 4. Reuse a compatible personal workflow, adapt an initial example from
    [menu-map.md](references/menu-map.md), or compose a new workflow using verified
    public operations. Read any selected example fully to retain its operational
-   constraints. A menu mapping or base recipe is optional. Record workflow revision,
-   tool interfaces, inputs, planned steps, side effects, and completion criteria
-   before execution. Current user instructions override remembered defaults.
+   constraints. A menu mapping or base recipe is optional. Establish the applicable
+   revision, inputs, steps, side effects, and completion criteria before execution;
+   do not copy an unchanged workflow into a new persistent plan. Current user instructions override remembered defaults.
 
 ## Execute and learn
 
@@ -43,7 +44,7 @@ Follow the user's requested scope and the working project's instructions.
 - Check existing outputs before generation, fitting, plotting, or resubmission.
   Follow the recipe's actual overwrite behavior. Preparation does not authorize
   submitting jobs. Do not repeat a batch submission after an ambiguous failure.
-- Record each attempt and verify its outputs. A successful process or JSON result
+- Verify each attempt; retain evidence only under the state retention rules. A successful process or JSON result
   is not proof of SCF convergence, job completion, or physical validity.
 - On failure, preserve evidence, identify a testable cause, and retry only when a
   changed condition supports it and the action remains in scope. If the same cause
@@ -51,16 +52,21 @@ Follow the user's requested scope and the working project's instructions.
 - For interrupted work, read history and inspect files/job status before continuing;
   do not regenerate completed cases. Record waiting jobs as `waiting`, not complete.
 - Follow the promotion and version rules in [state.md](references/state.md) to
-  revise personal workflows using verified lessons. Keep unknown causes in history.
+  improve reusable procedures directly in workflows when a meaningful change is
+  validated. Do not create separate lesson files or revisions for repeated success.
 - Use the [workflow template](assets/workflow.md) for new or adapted compositions,
-  save a personal draft, and validate the executed steps before promotion.
+  save a draft only when it merits reuse or further validation, and validate the
+  executed steps before promotion.
   If a step cannot be composed from existing public operations, report the missing
-  operation and required inputs/outputs/interface. Core/tool implementation is a
+  observed limitation, attempted operation, and actual workaround or failure.
+  Record new nonduplicate friction in memory/observations.md, including inefficient
+  successful work. Do not propose implementation, API design, layer ownership, or
+  priority as part of these observations. Core/tool implementation is a
   separate, explicitly requested development task, not workflow improvement.
   Do not invent commands or APIs, silently alter scientific settings, or modify
   source to make a workflow work.
 
 Finish with the workflow and operations used, generated paths, validation, outstanding work,
-run-record location, and any memory/workflow revision made. State clearly when
+record locations only when records were needed, and any memory/workflow change made. State clearly when
 persistence was unavailable. The skill performs no background learning or monitoring
 after the agent session ends.

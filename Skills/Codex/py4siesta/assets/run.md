@@ -1,5 +1,9 @@
 # Run record
 
+Create only for required resume state, uncertain submissions, investigation that
+needs continuation, or workflow validation evidence unavailable in existing outputs.
+Omit irrelevant fields and link existing logs instead of copying them.
+
 - Run ID / UTC time:
 - Request and authorized scope:
 - Project / host / absolute calculation cwd:
