@@ -1,6 +1,6 @@
 ---
 name: py4siesta
-description: Prepare, run, and analyze SIESTA cases by composing existing NanoCore and py4siesta-tool operations and progressively improving personal workflows from validated experience. Use for py4siesta calculation work and workflow reuse, not general DFT advice or unrelated code changes.
+description: Use only when the user explicitly requests the py4siesta skill or calculation work using py4siesta. Prepare, run, and analyze cases by composing existing NanoCore and py4siesta-tool operations and reusing validated personal workflows. SIESTA-related requests alone do not trigger this skill; exclude general DFT advice and source-code development.
 ---
 
 # py4siesta calculation workflows
@@ -22,12 +22,12 @@ Follow the user's requested scope and the working project's instructions.
 
 1. Identify the calculation directory, goal/function, inputs, and whether
    the user wants preparation, submission, analysis, or a complete calculation.
-2. Read [runtime.md](references/runtime.md). Verify the executable/Python environment
-   and actual command help before writing calculation files.
-3. Read [state.md](references/state.md). For execution tasks, select the external
+2. Read [state.md](references/state.md). For execution tasks, select the external
    state directory and load only relevant memories and workflow revisions. Persist
-   only useful new information or required resume/validation evidence; routine
-   unchanged success creates no new record. Explanation-only requests create none.
+   only useful new information or required resume/validation evidence. Repetition
+   or explanation alone creates no record; independently useful new facts still qualify.
+3. Read [runtime.md](references/runtime.md). Verify the executable/Python environment
+   and actual command help before writing calculation files.
 4. Reuse a compatible personal workflow, adapt an initial example from
    [menu-map.md](references/menu-map.md), or compose a new workflow using verified
    public operations. Read any selected example fully to retain its operational
@@ -65,6 +65,11 @@ Follow the user's requested scope and the working project's instructions.
   separate, explicitly requested development task, not workflow improvement.
   Do not invent commands or APIs, silently alter scientific settings, or modify
   source to make a workflow work.
+
+Before finishing, including after a failed or blocked task, evaluate each save condition
+in [state.md](references/state.md), complete qualifying writes, and read back changed
+files to verify their location and contents. Do not create records merely to prove
+that this check occurred.
 
 Finish with the workflow and operations used, generated paths, validation, outstanding work,
 record locations only when records were needed, and any memory/workflow change made. State clearly when

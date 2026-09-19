@@ -1,11 +1,15 @@
 from __future__ import print_function
 from . atoms import *
 from . import io
+from . import siestaio
 from . io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
-from . units import ang2bohr
+from . units import ang2bohr, Ry2eV
 from glob import glob
 from pathlib import Path
 import shutil
+import subprocess
+import tempfile
+from shlex import quote
 
 
 #
@@ -193,222 +197,53 @@ Siesta(atoms)
             self._params[key] = value
 
 
-    def write_struct(self, cellparameter=1.0):
+    def write_struct(self, cellparameter=1.0, file_path='STRUCT.fdf'):
 
-        cell1 = self._atoms.get_cell()[0]
-        cell2 = self._atoms.get_cell()[1]
-        cell3 = self._atoms.get_cell()[2]
-
-        #---------------STRUCT.fdf----------------
-        fileS = open('STRUCT.fdf', 'w')
-        natm = len(self._atoms)
-        fileS.write("NumberOfAtoms    %d           # Number of atoms\n" % natm)
-        unique_symbs = get_unique_symbs(self._atoms)
-        fileS.write("NumberOfSpecies  %d           # Number of species\n\n" % len(unique_symbs))
-        fileS.write("%block ChemicalSpeciesLabel\n")
-    
-        for symb in unique_symbs:
-            fileS.write(" %d %d %s\n" % (unique_symbs.index(symb)+1,atomic_number(symb),symb) )
-        fileS.write("%endblock ChemicalSpeciesLabel\n")
-    
-        #Lattice
-        fileS.write("\n#(3) Lattice, coordinates, k-sampling\n\n")
-        fileS.write("LatticeConstant   %15.9f Ang\n" % cellparameter)
-        fileS.write("%block LatticeVectors\n")
-        va, vb, vc = cell1, cell2, cell3
-        fileS.write("%15.9f %15.9f %15.9f\n" % tuple(va))
-        fileS.write("%15.9f %15.9f %15.9f\n" % tuple(vb))
-        fileS.write("%15.9f %15.9f %15.9f\n" % tuple(vc))
-        fileS.write("%endblock LatticeVectors\n\n")
-    
-        #Coordinates
-        fileS.write("AtomicCoordinatesFormat Ang\n")
-        fileS.write("%block AtomicCoordinatesAndAtomicSpecies\n")
-    
-        for atom in self._atoms:
-            x,y,z = atom.get_position(); symb = atom.get_symbol()
-            fileS.write(" %15.9f %15.9f %15.9f %4d %4d\n" %\
-                       (x,y,z,unique_symbs.index(symb)+1, atom.get_serial()))
-            
-        fileS.write("%endblock AtomicCoordinatesAndAtomicSpecies\n")
-        fileS.close()
+        return siestaio.write_struct(self._atoms, cellparameter, file_path)
 
 
-    def write_basis(self):
+    def write_basis(self, file_path='BASIS.fdf'):
 
-        #--------------BASIS.fdf---------------
-        fileB = open('BASIS.fdf', 'w')
-        unique_symbs = get_unique_symbs(self._atoms)
-        fileB.write("\n#(1) Basis definition\n\n")
-        fileB.write("PAO.BasisType    %s\n"        % self._params['BasisType'])   # split, splitgauss, nodes, nonodes
-        fileB.write("PAO.BasisSize    %s\n"        % self._params['BasisSize'])   # SZ or MINIMAL, DZ, SZP, DZP or STANDARD
-        fileB.write("PAO.EnergyShift  %5.3f meV\n" % self._params['EnergyShift']) # default: 0.02 Ry
-        fileB.write("PAO.SplitNorm    %5.3f\n"     % self._params['Splitnorm'])   # default: 0.15
-        fileB.close()
+        return siestaio.write_basis(self._atoms, self._params, file_path)
 
 
-    def write_kpt(self):
+    def write_kpt(self, file_path='KPT.fdf'):
 
-        #--------------KPT.fdf-----------------
-        fileK = open('KPT.fdf','w')   
-        fileK.write("%block kgrid_Monkhorst_Pack\n")
-        fileK.write("   %i   0   0   %f\n" % (self._params['kgrid'][0], self._params['kshift'][0]))
-        fileK.write("   0   %i   0   %f\n" % (self._params['kgrid'][1], self._params['kshift'][1]))
-        fileK.write("   0   0   %i   %f\n" % (self._params['kgrid'][2], self._params['kshift'][2]))
-        fileK.write("%endblock kgrid_Monkhorst_Pack\n")
-        fileK.close()
+        return siestaio.write_kpt(self._params, file_path)
 
 
-    def write_siesta(self):
+    def write_siesta(self, file_path='RUN.fdf'):
 
-        #--------------RUN.fdf-----------------
-        file = open('RUN.fdf', 'w')
-        file.write("#(1) General system descriptors\n\n")
-        file.write("SystemName       %s           # Descriptive name of the system\n" % self._params['Name'])
-        file.write("SystemLabel      %s           # Short name for naming files\n" % self._params['Label'])    
-        file.write("%include STRUCT.fdf\n")
-        file.write("%include KPT.fdf\n")
-        file.write("%include BASIS.fdf\n")
-
-        #if params_scf['Solution'][0] == 't' or params_scf['Solution'][0] == 'T':
-        #    file.write("%include TS.fdf\n")
-        #if params_post['Denchar']==1:
-        #    file.write("%include DENC.fdf\n")
-    
-        ## XC OPTIONS ##
-        file.write("\n#(4) DFT, Grid, SCF\n\n")
-        file.write("XC.functional         %s            # LDA or GGA (default = LDA)\n" % self._params['XCfunc'])
-        file.write("XC.authors            %s            # CA (Ceperley-Aldr) = PZ\n" % self._params['XCauthor'])
-        #file.write("                                    #    (Perdew-Zunger) - LDA - Default\n")
-        #file.write("                                    # PW92 (Perdew-Wang-92) - LDA\n")
-        #file.write("                                    # PBE (Perdew-Burke-Ernzerhof) - GGA\n")
-        file.write("MeshCutoff            %f    Ry      # Default: 50.0 Ry ~ 0.444 Bohr\n" % self._params['MeshCutoff'])
-    
-        ## SCF OPTIONS ##   
-        file.write("                                    #         100.0 Ry ~ 0.314 Bohr\n")
-        file.write("MaxSCFIterations      %d           # Default: 50\n" % self._params['MaxIt'])
-        file.write("DM.MixingWeight       %6.5f          # Default: 0.25\n" % self._params['MixingWt'])
-        file.write("DM.NumberPulay        %d             # Default: 0\n" % self._params['Npulay'])
-        file.write("DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2\n")
-        file.write("DM.Tolerance          1.d-5         # Default: 1.d-4\n")
-        file.write("DM.UseSaveDM          .true.        # because of the bug\n")
-        file.write("SCFMustConverge       .true.        \n")
-        file.write("NeglNonOverlapInt     F             # Default: F\n")
-        file.write("\n#(5) Eigenvalue problem: order-N or diagonalization\n\n")
-        file.write("SolutionMethod        %s \n"  % self._params['Solution'])
-        file.write("ElectronicTemperature %4.1f K       # Default: 300.0 K\n" % self._params['Temp'])
-        file.write("Diag.ParallelOverK     F\n\n")
+        return siestaio.write_siesta(self._params, file_path)
 
 
-        ## PERSONAL-OPTIONS
-        if self._params['SlabDipole'] == 'T':
-            file.write("SlabDipoleCorrection  T \n") # add for test
+    def read_struct(self, file_path='STRUCT.fdf'):
 
-        if self._params['Spin'] == 'polarized':
-            file.write("Spin    polarized\n")
-        elif self._params['Spin'] == 'spin-orbit':
-            file.write("Spin    spin-orbit\n")
+        atoms = siestaio.read_struct(file_path)
+        self._atoms = atoms
+        return atoms
 
 
+    def read_basis(self, file_path='BASIS.fdf'):
 
-        ## Calculation OPTIONS ##
-        if self._params['Optimization'] == 1:
-            file.write("\n#(6) Molecular dynamics and relaxations\n\n")
-            file.write("MD.TypeOfRun          %s             # Type of dynamics:\n" % self._params['Run'])
-            #file.write("                                    #   - CG\n")
-            #file.write("                                    #   - Verlet\n")
-            #file.write("                                    #   - Nose\n")
-            #file.write("                                    #   - ParrinelloRahman\n")
-            #file.write("                                    #   - NoseParrinelloRahman\n")
-            #file.write("                                    #   - Anneal\n")
-            #file.write("                                    #   - FC\n")
-            #file.write("                                    #   - Phonon\n")
-            #file.write("MD.VariableCell       %s\n" %params_opt['cell_opt'])
-            file.write("MD.NumCGsteps         %d            # Default: 0\n" % self._params['CGsteps'])
-           # file.write("MD.MaxCGDispl         0.1 Ang       # Default: 0.2 Bohr\n")
-            file.write("MD.MaxForceTol        %f eV/Ang  # Default: 0.04 eV/Ang\n" % self._params['ForceTol'])
-            #file.write("MD.MaxStressTol       1.0 GPa       # Default: 1.0 GPa\n")
-    
-        if self._params['MD'] == 1:
-            file.write("\n#(6) Molecular dynamics and relaxations\n\n")
-            file.write("MD.TypeOfRun          %s            # Type of dynamics:\n" % self._params['Run'])
-            #file.write("MD.VariableCell       %s\n" %params_opt['cell_opt'])
-            file.write("MD.NumCGsteps         %d            # Default: 0\n" % self._params['CGsteps'])
-            #file.write("MD.MaxCGDispl         0.1 Ang       # Default: 0.2 Bohr\n")
-            file.write("MD.MaxForceTol        %f eV/Ang  # Default: 0.04 eV/Ang\n" % self._params['ForceTol'])
-            #file.write("MD.MaxStressTol       1.0 GPa       # Default: 1.0 GPa\n")
-            file.write("MD.InitialTimeStep    1\n")
-            file.write("MD.FinalTimeStep      %i\n" % self._params['MDsteps'])
-            file.write("MD.LengthTimeStep     %f fs      # Default : 1.0 fs\n" % self._params['MDTimeStep'])
-            file.write("MD.InitialTemperature %f K       # Default : 0.0 K\n"  % self._params['MDInitTemp'])
-            file.write("MD.TargetTemperature  %f K       # Default : 0.0 K\n"  % self._params['MDTargTemp'])
-            file.write("WriteCoorStep         %s         # default : .false.\n"% self._params['WriteCoorStep'])
+        params = siestaio.read_basis(file_path)
+        self._params.update(params)
+        return params
 
-        if self._params['PLDOS'] == 1:
-            file.write("WriteWaveFunctions   .true.\n")
 
-        if self._params['FAT'] == 1:
-            file.write("COOP.Write  .true.\n")
-            file.write("WFS.Write.For.Bands .true.\n")
+    def read_kpt(self, file_path='KPT.fdf'):
 
-        if self._params['LDOS'] == 1:
-            file.write("# LDOS \n\n")
-            file.write("%block LocalDensityOfStates\n")
-            file.write(" %f %f eV\n" %(self._params['LDOSE'][0], self._params['LDOSE'][1]))
-            file.write("%endblock LocalDensityOfStates\n")
+        params = siestaio.read_kpt(file_path)
+        self._params.update(params)
+        return params
 
-        if self._params['PDOS'] == 1:
-            file.write("%block ProjectedDensityOfStates\n")
-            file.write(" %f %f %f %i eV\n" % tuple(self._params['PDOSE'])) #-20.00 10.00 0.200 500 eV Emin Emax broad Ngrid
-            file.write("%endblock ProjectedDensityOfStates\n")
 
-        if self._params['DOS'] == 1:
-            file.write("WriteEigenvalues      T      # SystemLabel.out [otherwise ~.EIG]\n")
+    def read_siesta(self, file_path='RUN.fdf'):
 
-        if self._params['RHO'] == 1:
-            file.write('SaveRho   .true.\n')
+        params = siestaio.read_siesta(file_path)
+        self._params.update(params)
+        return params
 
-        #file.write("%block GeometryConstraints\n")
-        #file.write("#position from 1 to %d\n" % natm)
-        #file.write("stress 4 5 6\n")
-        #file.write("%endblock GeometryConstraints\n")
-        #file.write("kgrid_cutoff 15.0 Ang\n")
-        #file.write("ProjectedDensityOfStates\n")
-                       
-        ## OUT OPTIONS ##
-        #file.write("\n#(9) Output options\n\n")
-        #file.write("WriteCoorInitial      F      # SystemLabel.out\n")
-        #file.write("WriteKpoints          F      # SystemLabel.out\n")
-        #file.write("WriteEigenvalues      F      # SystemLabel.out [otherwise ~.EIG]\n")
-        #file.write("WriteKbands           T      # SystemLabel.out, band structure\n")
-        #file.write("WriteBands            T      # SystemLabel.bands, band structure\n")
-        #file.write("WriteMDXmol           F      # SystemLabel.ANI\n")
-        file.write("WriteCoorXmol        .true.  \n")
-        #file.write("WriteDM.NetCDF        F      \n")
-        #file.write("WriteDMHS.NetCDF      F      \n")
-        #file.write("AllocReportLevel      0      # SystemLabel.alloc, Default: 0\n")
-        #file.write("%include banddata\n")
-        #file.write("""%block BandLines
-        # 1  1.000  1.000  1.000  L        # Begin at L
-        #20  0.000  0.000  0.000  \Gamma   # 20 points from L to gamma
-        #25  2.000  0.000  0.000  X        # 25 points from gamma to X
-        #30  2.000  2.000  2.000  \Gamma   # 30 points from X to gamma
-        #%endblock BandLines""")
-      
-        #file.write("\n#(10) Options for saving/reading information\n\n")
-        #file.write("SaveHS                F      # SystemLabel.HS\n")
-        #file.write("SaveRho               F      # SystemLabel.RHO\n")
-        #file.write("SaveDeltaRho          F      # SystemLabel.DRHO\n")
-        #file.write("SaveNeutralAtomPotential F   # SystemLabel.VNA\n")
-        #file.write("SaveIonicCharge       F      # SystemLabel.IOCH\n")
-
-        if self._params['VH'] == 1:
-            file.write("SaveElectrostaticPotential T # SystemLabel.VH\n")
-
-        #file.write("SaveTotalPotential    F      # SystemLabel.VT\n")
-        #file.write("SaveTotalCharge       F      # SystemLabel.TOCH\n")
-        #file.write("SaveInitialChargeDenaisty F  # SystemLabel.RHOINIT\n")
-        file.close()
 
     def pseudopotential_paths(self):
 
@@ -570,187 +405,28 @@ def load_simulation(filename):
 # SIESTA UTIL interface
 #
 
-def get_pypldos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nporc = 1):
-
-    """
-    Interface to PyProjection of siesta utils
-
-    Parameters
-    ----------
-    nmesh  : list
-        number of grid points along  each lattice vector
-    emin   : float
-        minimum energy value of PLDOS plot
-    emax   : float
-        maximum energy value of PLDOS plot
-
-    Optional parameters
-    -------------------
-    orbital_index : int
-        orbital index for PDOS plot (e.g. C_2_1_1, 1_5_2, ...)
-    label : string
-        label name (*.DM, *.XV, ...)
-    npoints : int
-        the number of datapoints
-
-    Example
-    --------
-    >>> get_pypldos(nmesh = [10, 10 10], emin = -10, emax =5, npoints = 1001,
-                            orbital_index= 'C_2_1_0, label = 'siesta')
-    """
-
-    # write input file
-    file_INP = open('PyProjection.fdf', 'w')
-    file_INP.write('SystemLable  %s\n' % label)
-    file_INP.write('PyProjection.TypeOfRun    PLDOS\n')
-    file_INP.write('PyProjection.MinE         %4.2f\n'%emin)
-    file_INP.write('PyProjection.MaxE         %4.2f\n'%emax)
-    file_INP.write('PyProjection.NumE         %4.2f\n'%npoints)
-    file_INP.write('PyProjection.NumA         %d\n'%nmesh[0])
-    file_INP.write('PyProjection.NumB         %d\n'%nmesh[1])
-    file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
-    file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
+def _postprocess_path(file_path, simobj, label, suffix):
+    """Explicit file > simulation label > fallback label; paths use the current directory."""
+    if file_path is None:
+        label = simobj._params['Label'] if simobj is not None else label
+        file_path = '%s.%s' % (label, suffix)
+    return Path(file_path).expanduser()
 
 
-    from NanoCore.env import siesta_util_pldos as pldos
-    cmd = 'python %s' % pldos
-    if mpi:
-        cmd = 'mpirun -np %i ' % nproc + cmd
-    os.system(cmd)
+def get_dos(emin, emax, npoints=1001, broad=0.05, label='siesta', simobj=None, file_path=None):
 
+    """Read DOS from Eig2DOS using file_path (.EIG), simobj, or label.
 
-def get_pypdos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nporc = 1):
+    Return energy, total DOS, spin-up DOS, spin-down DOS as lists.
+    Writes DOS in the current directory; emin/emax/broad are in eV."""
 
-    """
-    Interface to PyProjection of siesta utils
-
-    Parameters
-    ----------
-    nmesh  : list
-        number of grid points along  each lattice vector
-    emin   : float
-        minimum energy value of PLDOS plot
-    emax   : float
-        maximum energy value of PLDOS plot
-
-    Optional parameters
-    -------------------
-    orbital_index : int
-        orbital index for PDOS plot (e.g. C_2_1_1, 1_5_2, ...)
-    label : string
-        label name (*.DM, *.XV, ...)
-    npoints : int
-        the number of datapoints
-
-    Example
-    --------
-    >>> get_pypldos(nmesh = [10, 10 10], emin = -10, emax =5, npoints = 1001,
-                            orbital_index= 'C_2_1_0, label = 'siesta')
-    """
-
-    # write input file
-    file_INP = open('PyProjection.fdf', 'w')
-    file_INP.write('SystemLable  %s\n' % label)
-    file_INP.write('PyProjection.TypeOfRun    PDOS\n')
-    file_INP.write('PyProjection.MinE         %4.2f\n'%emin)
-    file_INP.write('PyProjection.MaxE         %4.2f\n'%emax)
-    file_INP.write('PyProjection.NumE         %4.2f\n'%npoints)
-    file_INP.write('PyProjection.NumA         %d\n'%nmesh[0])
-    file_INP.write('PyProjection.NumB         %d\n'%nmesh[1])
-    file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
-    file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
-
-    from NanoCore.env import siesta_util_pldos as pldos
-    cmd = 'python %s' % pldos
-    if mpi:
-        cmd = 'mpirun -np %i ' % nproc + cmd
-    os.system(cmd)
-
-
-def get_pyfatband(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nporc = 1):
-
-    """
-    Interface to PyProjection of siesta utils
-
-    Parameters
-    ----------
-    nmesh  : list
-        number of grid points along  each lattice vector
-    emin   : float
-        minimum energy value of PLDOS plot
-    emax   : float
-        maximum energy value of PLDOS plot
-
-    Optional parameters
-    -------------------
-    orbital_index : int
-        orbital index for PDOS plot (e.g. C_2_1_1, 1_5_2, ...)
-    label : string
-        label name (*.DM, *.XV, ...)
-    npoints : int
-        the number of datapoints
-
-    Example
-    --------
-    >>> get_pypldos(nmesh = [10, 10 10], emin = -10, emax =5, npoints = 1001,
-                            orbital_index= 'C_2_1_0, label = 'siesta')
-    """
-
-    # write input file
-    file_INP = open('PyProjection.fdf', 'w')
-    file_INP.write('SystemLable  %s\n' % label)
-    file_INP.write('PyProjection.TypeOfRun    FAT\n')
-    file_INP.write('PyProjection.MinE         %4.2f\n'%emin)
-    file_INP.write('PyProjection.MaxE         %4.2f\n'%emax)
-    file_INP.write('PyProjection.NumE         %4.2f\n'%npoints)
-    file_INP.write('PyProjection.NumA         %d\n'%nmesh[0])
-    file_INP.write('PyProjection.NumB         %d\n'%nmesh[1])
-    file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
-    file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
-
-    from NanoCore.env import siesta_util_pldos as pldos
-    cmd = 'python %s' % pldos
-    if mpi:
-        cmd = 'mpirun -np %i ' % nproc + cmd
-    os.system(cmd)
-
-
-
-def get_dos(emin, emax, npoints=1001, broad=0.05, label='siesta'):
-
-    """
-    Interface to Eig2dos of siesta utils
-
-    Parameters
-    ----------
-
-    Optional parameters
-    -------------------
-    label : string
-        label name (*.DM, *.XV, ...)
-    emin : float
-        minimum value of DOS plot
-    emax : float
-        maximum value of DOS plot
-    npoints : int
-        the number of datapoints
-    broad : float
-        broadening factor for DOS plot
-
-    Example
-    --------
-    >>> E, dos, dos1, dos2 = s2.get_dos(-10, 10, npoints=1001, broad=0.1)
-    """
-
-    # Eig2DOS script
     from NanoCore.env import siesta_util_location as sul
     from NanoCore.env import siesta_util_dos as sud
-    os.system('%s/%s -f -s %f -n %i -m %f -M %f %s.EIG > DOS' % (sul, sud, 
-                                                                 broad, npoints, 
-                                                                 emin, emax, label))
+    os.system('%s/%s -f -s %f -n %i -m %f -M %f %s > DOS' % (sul, sud,
+                                                                 broad, npoints,
+                                                                 emin, emax, quote(str(_postprocess_path(file_path, simobj, label, 'EIG')))))
 
-    # reload DOS
-    f_dos = open('DOS').readlines()
+    f_dos = Path('DOS').read_text().splitlines()
 
     energy = []; dos_1 = []; dos_2 = []; dos = []
     for line in f_dos:
@@ -762,109 +438,154 @@ def get_dos(emin, emax, npoints=1001, broad=0.05, label='siesta'):
     return energy, dos, dos_1, dos_2
 
 
-def get_band(simobj, pathfile, label='siesta', rerun=0):
+def _read_band_structure(file_path):
+    """Read band arrays and energy references without external utilities."""
+    path = Path(file_path).expanduser()
+    lines = path.read_text().splitlines()
+    if len(lines) < 5:
+        raise ValueError(f"{path} is too short to be a SIESTA .bands file.")
 
-    """
-    Interface to new.gnubands of siesta utils
+    fermi_level = float(lines[0].split()[0])
+    nbands, nspin, nkpoints = [int(value) for value in lines[3].split()[:3]]
+    total_bands = nbands * nspin
+    lines_per_kpoint = (total_bands + 9) // 10
 
-    Parameters
-    ----------
-    simobj : simulation object
-        SIESTA simulation objects, need for re-run
-    pathfile : str
-        the location of bandpath file (SIESTA format)
+    kpath = np.zeros(nkpoints, dtype=float)
+    energies = np.zeros((total_bands, nkpoints), dtype=float)
+    line_index = 4
 
-        example)
+    for ikpoint in range(nkpoints):
+        band_index = 0
+        for segment_index in range(lines_per_kpoint):
+            words = lines[line_index].split()
+            line_index += 1
+            if segment_index == 0:
+                kpath[ikpoint] = float(words[0])
+                values = words[1:]
+            else:
+                values = words
 
-            BandLinesScale    pi/a
-            %block BandLines
-             1  0.000  0.000  0.000  \Gamma   # Begin at gamma
-            50  0.816  0.000  0.000  M        # 50 points from gamma to M
-            25  0.816  0.471  0.000  K        # 25 points from M to K
-            60  0.000  0.000  0.000  \Gamma   # 60 points from K to gamma
-            %endblock BandLines
+            for value in values:
+                if band_index >= total_bands:
+                    break
+                energies[band_index, ikpoint] = float(value)
+                band_index += 1
 
-    Optional parameters
-    -------------------
-    label : string
-        label name (*.DM, *.XV, ...)
+    nspecial = int(lines[line_index].split()[0])
+    line_index += 1
 
-    Example
-    --------
-    >>> # for spin-unpolarized cases
-    >>> path, eigs = get_band(sim, './bandline')
-    >>>
-    >>> # for spin-polarized cases
-    >>> path1, eig1, path2, eigs2 = get_band(sim, './bandline')
-    """
+    special_k = []
+    labels = []
+    for line in lines[line_index:line_index + nspecial]:
+        words = line.split()
+        if len(words) < 2:
+            continue
+        special_k.append(float(words[0]))
+        labels.append(words[1].strip("'\""))
+
+    below_fermi = energies[energies <= fermi_level]
+    above_fermi = energies[energies > fermi_level]
+    vbm = float(np.max(below_fermi)) if below_fermi.size else fermi_level
+    cbm = float(np.min(above_fermi)) if above_fermi.size else fermi_level
+    bandgap = max(0.0, cbm - vbm)
+
+    return dict(
+        kpath=kpath,
+        energies=energies.T.reshape(nkpoints, nspin, nbands),
+        nbands=nbands,
+        nkpoints=nkpoints,
+        nspin=nspin,
+        special_k=np.array(special_k, dtype=float),
+        labels=labels,
+        fermi_level=fermi_level,
+        bandgap=bandgap,
+        vbm=vbm,
+        cbm=cbm,
+    )
+
+
+def get_band(simobj=None, pathfile=None, label='siesta', rerun=0, bands_path=None, return_data=False, file_path=None):
+
+    """Read file_path (.bands), simobj, or label; bands_path is a legacy alias.
+
+    Default: band-wise lists (paths, E-Ef), or (paths1, E1-Ef, paths2,
+    E2-Ef) for two spins. return_data=True returns unshifted energies
+    (nkpoints, nspin, nbands), kpath, special_k, labels, nbands, nspin, nkpoints,
+    fermi_level, vbm, cbm, bandgap. Energies are in eV; occupied means
+    E <= Ef, with Ef as fallback for an empty set. No temporary files.
+    rerun requires simobj and pathfile (a band-path definition)."""
 
     if rerun:
-        # attach path file
-        f = open('RUN.fdf', 'a')
-        path = open(pathfile).readlines()
-        for line in path: f.write(line)
-        f.write('WriteBands            T')
-        f.close()
-        # re-run
+        if simobj is None or pathfile is None:
+            raise ValueError('rerun requires simobj and pathfile.')
+        with open(pathfile) as path_input:
+            path = path_input.readlines()
+        with open('RUN.fdf', 'a') as f:
+            for line in path: f.write(line)
+            f.write('WriteBands            T')
         simobj.run(mode='POST')
 
-    # gnuband script
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_band as sub
-    os.system('%s/%s < %s.bands > BAND' % (sul, sub, label))
+    path = _postprocess_path(file_path if file_path is not None else bands_path, simobj, label, 'bands')
+    data = _read_band_structure(path)
+    if return_data:
+        return data
 
-    # read band data
-    from . import DataTnBand as dtb
-    from glob import glob
-    dtb.DataTnBand('%s.bands' % label)
-    fs  = glob('band???.oneD'); fs.sort()
-    fs1 = glob('band_*spin1.oneD'); fs1.sort()
-    fs2 = glob('band_*spin2.oneD'); fs2.sort()
+    energies = data['energies'].reshape(data['nkpoints'], -1).T - data['fermi_level']
+    nbands = data['nbands']
+    paths = [data['kpath'].tolist() for _ in range(nbands)]
+    if data['nspin'] == 1:
+        return paths, energies.tolist()
+    if data['nspin'] == 2:
+        paths2 = [data['kpath'].tolist() for _ in range(nbands)]
+        return paths, energies[:nbands].tolist(), paths2, energies[nbands:].tolist()
+    raise ValueError('Legacy band output supports one or two spins; use return_data=True.')
 
-    # case 1: spin-unpolarized
-    if not fs1:
-        kptss = []; eigss = []
-        for f in fs:
-            temp = open(f).readlines()
-            kpts = []; eigs = []
-            for line in temp:
-                if not line.startswith('#'):
-                    kpt, eig = line.split()
-                    kpt = float(kpt); eig = float(eig)
-                    kpts.append(kpt); eigs.append(eig)
-            kptss.append(kpts); eigss.append(eigs)
 
-        os.system('rm *.oneD')
-        return kptss, eigss
+def get_eig(label='siesta', eig_path=None, return_data=False, simobj=None, file_path=None):
+    """Read file_path (.EIG), simobj, or label; eig_path is a legacy alias.
 
-    # case 2: spin-polarized
-    else:
-        # spin 1
-        kptss1 = []; eigss1 = []
-        for f in fs1:
-            temp = open(f).readlines()
-            kpts = []; eigs = []
-            for line in temp:
-                if not line.startswith('#'):
-                    kpt, eig = line.split()
-                    kpt = float(kpt); eig = float(eig)
-                    kpts.append(kpt); eigs.append(eig)
-            kptss1.append(kpts); eigss1.append(eigs)
+    Return (energies, fermi_level), with unshifted energies in eV shaped
+    (nkpoints, nspin, nbands). return_data=True returns energies,
+    fermi_level, nbands, nspin, nkpoints, vbm, cbm, bandgap.
+    Like siestagap, occupied means occupation >= 0.01 at 300 K:
+    E <= Ef + 8.617e-5 * 300 * log(99). Empty sets fall back to Ef;
+    bandgap is max(0, cbm-vbm), not a metallicity test."""
+    path = _postprocess_path(file_path if file_path is not None else eig_path, simobj, label, 'EIG')
+    lines = path.read_text().splitlines()
+    if len(lines) < 2:
+        raise ValueError('%s is too short to be a SIESTA .EIG file.' % path)
 
-        # spin 2
-        kptss2 = []; eigss2 = []
-        for f in fs2:
-            temp = open(f).readlines()
-            kpts = []; eigs = []
-            for line in temp:
-                if not line.startswith('#'):
-                    kpt, eig = line.split()
-                    kpt = float(kpt); eig = float(eig)
-                    kpts.append(kpt); eigs.append(eig)
-            kptss2.append(kpts); eigss2.append(eigs)
+    fermi_level = float(lines[0].split()[0])
+    nbands, nspin, nkpoints = [int(value) for value in lines[1].split()[:3]]
+    if min(nbands, nspin, nkpoints) <= 0:
+        raise ValueError('%s has invalid eigenvalue dimensions.' % path)
+    total_eigenvalues = nbands * nspin
+    lines_per_kpoint = (total_eigenvalues + 9) // 10
+    energies = np.empty((nkpoints, nspin, nbands), dtype=float)
+    line_index = 2
+    for ikpoint in range(nkpoints):
+        values = []
+        for segment_index in range(lines_per_kpoint):
+            if line_index >= len(lines):
+                raise ValueError('%s has incomplete eigenvalue data.' % path)
+            words = lines[line_index].split()
+            line_index += 1
+            values.extend(float(value) for value in (words[1:] if segment_index == 0 else words))
+        if len(values) != total_eigenvalues:
+            raise ValueError('%s has an incorrect eigenvalue count at k-point %d.' % (path, ikpoint + 1))
+        energies[ikpoint] = np.array(values).reshape(nspin, nbands)
 
-        os.system('rm *.oneD')
-        return kptss1, eigss1, kptss2, eigss2
+    if not return_data:
+        return energies, fermi_level
+
+    occupied_cutoff = fermi_level + 8.617e-5 * 300.0 * np.log(99.0)
+    occupied = energies[energies <= occupied_cutoff]
+    unoccupied = energies[energies > occupied_cutoff]
+    vbm = float(np.max(occupied)) if occupied.size else fermi_level
+    cbm = float(np.min(unoccupied)) if unoccupied.size else fermi_level
+    return dict(energies=energies, fermi_level=fermi_level, nbands=nbands,
+                nspin=nspin, nkpoints=nkpoints, vbm=vbm, cbm=cbm,
+                bandgap=max(0.0, cbm - vbm))
 
 
 def siesta_xsf2cube(f_in, grid_type):
@@ -1077,126 +798,73 @@ def get_rho(v1, v2, v3, origin, nmesh, label='siesta'):
     os.system('mv %s.XSF RHO.XSF' % label)
 
 
-def get_pdos(simobj, emin, emax, by_atom=1, atom_index=[], species=[], broad=0.1, npoints=1001, label='siesta'):
+def get_pdos(simobj=None, emin=None, emax=None, by_atom=1, atom_index=None, species=None, broad=0.1, npoints=1001, label='siesta', file_path=None, n=0, l=-1, m=9, output_path=None, executable=None):
+    """Return energy, spin-up DOS, spin-down DOS from fmpdos as lists.
 
+    file_path (.PDOS) overrides simobj and label. Select atom_index or
+    species, with n=0/l=-1/m=9 meaning all at each level. output_path
+    retains the extracted file; otherwise it is temporary. Energies are
+    unshifted; absent spin-down is empty. emin/emax/broad/npoints/by_atom
+    remain compatibility arguments and do not filter or broaden data.
     """
-    Interface to fmpdos of siesta utils
+    from NanoCore.env import siesta_util_location, siesta_util_pdos
 
-    Parameters
-    ----------
-    simobj : simulation object
-        SIESTA simulation objects, need for re-run
-    emin : float
-        minimum value of DOS plot
-    emax : float
-        maximum value of DOS plot
+    path = _postprocess_path(file_path, simobj, label, 'PDOS').resolve()
+    if executable is None:
+        executable = Path(str(siesta_util_pdos)).expanduser()
+        if not executable.is_absolute() and len(executable.parts) == 1:
+            executable = Path(siesta_util_location).expanduser() / executable
+    quantum = [str(int(n))]
+    if int(n) != 0:
+        quantum.append(str(int(l)))
+        if int(l) != -1:
+            quantum.append(str(int(m)))
+    selections = [' '.join(map(str, values)) for values in (atom_index, species) if values]
+    if not selections:
+        raise ValueError('PDOS requires atom_index or species.')
 
-    Optional parameters
-    -------------------
-    by_atom : bool
-        if true,  set atom_index=[]
-        if false, set species=[]
-    atom_index : list
-        serial numbers for PDOS plot
-    species : list
-        atomic symbols for PDOS plot
-    label : string
-        label name (*.DM, *.XV, ...)
-    npoints : int
-        the number of datapoints
-    broad : float
-        broadening factor for DOS plot
-
-    Example
-    --------
-    >>> E, dos1, dos2 = get_pdos(simobj, -10, 10, by_atom=1,
-                                 atom_index=[1,2,3,4], 
-                                 broad=0.05, npoints=1001)
-
-    >>> E, dos1, dos2 = get_pdos(simobj, -10, 10, by_atom=0,
-                                 species=['C','H'], 
-                                 broad=0.05, npoints=1001)
-    """
-
-    # re-run
-    #simobj.run(mode='POST')
-
-    # temp. input file for rho2xsf
-    file_INP = open('INP', 'w')
-    file_INP.write('%s.PDOS\n' % label)                      # 1.input PDOS
-    file_INP.write('PDOS\n')                                 # 2.output file
-
-    if atom_index:
-        tmp_str = ''
-        for ind in atom_index: tmp_str += '%i ' % ind
-        file_INP.write(tmp_str + '\n')
-
-    if species:
-        tmp_str = ''
-        for spe in species: tmp_str += '%s ' % spe
-        file_INP.write(tmp_str + '\n')
-
-    file_INP.write('0 \n')                                   # all quantum numbers
-    file_INP.close()
-
-    # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_pdos as sup
-    os.system('%s/%s < INP > OUT' % (sul, sup))
-    os.system('rm INP OUT')
-   
-    # read PDOS
-    lines = open('PDOS').readlines()
-    energy = []; dos_1 = []; dos_2 = []
-
-    for line in lines:
-        if not line.startswith('#'):
-            tmp = line.split()
-            if len(tmp) == 2:
-                e = float(tmp[0]); d = float(tmp[1])
-                energy.append(e); dos_1.append(d)
-            if len(tmp) == 3:
-                e = float(tmp[0]); d1 = float(tmp[1]); d2 = float(tmp[2])
-                energy.append(e); dos_1.append(d1); dos_2.append(d2)
-    os.system('rm PDOS')
-
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(output_path).expanduser().resolve() if output_path is not None else Path(directory) / 'PDOS'
+        if output == path:
+            raise ValueError('PDOS output_path must differ from file_path.')
+        if output.exists():
+            output.unlink()
+        files = ["'" + str(value).replace("'", "''") + "'" for value in (path, output)]
+        subprocess.run([str(executable)],
+                       input='\n'.join(files + selections + quantum) + '\n',
+                       text=True, check=True, stdout=subprocess.DEVNULL)
+        if not output.is_file():
+            raise FileNotFoundError('fmpdos did not generate expected output file: %s' % output)
+        energy, dos_1, dos_2 = [], [], []
+        for line in output.read_text().splitlines():
+            words = line.split()
+            if not words or words[0].startswith('#'):
+                continue
+            if len(words) in (2, 3):
+                energy.append(float(words[0]))
+                dos_1.append(float(words[1]))
+                if len(words) == 3:
+                    dos_2.append(float(words[2]))
     return energy, dos_1, dos_2
 
 
-def get_pldos(simobj, emin, emax, broad=0.1, npoints=1001, label='siesta'):
+def get_pldos(simobj=None, emin=None, emax=None, broad=0.1, npoints=1001, label='siesta', file_path=None, structure_path=None):
 
-    """
-    Interface to fmpdos of siesta utils
+    """Return z coordinates, DOS (energy, z), and energies from .PDOS.
 
-    Parameters
-    ----------
-    simobj : simulation object
-        SIESTA simulation objects, need for re-run
-    emin : float
-        minimum value of DOS plot
-    emax : float
-        maximum value of DOS plot
+    file_path overrides the simulation label. structure_path (XYZ)
+    overrides simobj's atoms and is required without simobj. Retains
+    legacy z grouping and first-spin absolute DOS; energy-range and
+    broadening arguments are passed to get_pdos unchanged."""
 
-    Optional parameters
-    -------------------
-    label : string
-        label name (*.DM, *.XV, ...)
-    npoints : int
-        the number of datapoints
-    broad : float
-        broadening factor for DOS plot
+    if structure_path is not None:
+        from .io import read_xyz
+        atoms = read_xyz(str(Path(structure_path).expanduser()))
+    elif simobj is not None:
+        atoms = simobj._atoms.copy()
+    else:
+        raise ValueError('PLDOS requires simobj or structure_path (XYZ).')
 
-    Example
-    --------
-    >>> z_coords, Z, E = s2.get_pldos(sim, -5, 5, 
-                                      broad=0.05, 
-                                      npoints=1001)
-    """
-
-    # AtomsSystem from simulation object
-    atoms = simobj._atoms.copy()
-    
-    # slice atoms by z coordinates
     z_coords = []; indice = []
     for atom in atoms:
         if not atom[2] in z_coords: z_coords.append(atom[2])
@@ -1207,48 +875,47 @@ def get_pldos(simobj, emin, emax, broad=0.1, npoints=1001, label='siesta'):
             if abs(z-atom[2]) < 0.01: temp.append(atom.get_serial())
         indice.append(temp)
 
-    # get pdos
     Z = []; E = []
     for ind in indice:
-        E1, dos11, dos12 = get_pdos(simobj, emin, emax, by_atom=1, 
-                                    atom_index=ind, broad=broad, npoints=npoints, label=label)
+        E1, dos11, dos12 = get_pdos(simobj, emin, emax, by_atom=1,
+                                    atom_index=ind, broad=broad, npoints=npoints, label=label, file_path=file_path)
         E = np.array(E1)
         Z.append(np.array(dos11))
 
     return z_coords, np.abs(Z).T, E
 
 
-def get_hartree_pot_z(label='siesta'):
+def planeaverage_grid(target='VH', axis=2, file_path=None, simobj=None, label='siesta'):
 
-    # temp. input file for macrove
-    file_INP = open('macroave.in', 'w')
-    file_INP.write('Siesta\n')     # Which code have you used to get the input data?
-    file_INP.write('Potential\n')  # Which is the input data used to compute the band offset?
-    file_INP.write('%s\n' % label) # Name of the file where the input data is stored
-    file_INP.write('2 \n')         # Number of convolutions required to calculate the macro. ave.
-    file_INP.write('0 \n')         # First length for the filter function in macroscopic average
-    file_INP.write('0 \n')         # Second length for the filter function in macroscopic average
-    file_INP.write('0 \n')         # Total charge
-    file_INP.write('spline \n')    # Type of interpolation
-    file_INP.close()
+    """Return coordinate (Ang) and plane-averaged values from a SIESTA grid.
 
-    # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_vh as sv
-    os.system('%s/%s < macroave.in' % (sul, sv))
-    os.system('rm macroave.in')
+    target: VH/VT (Ry -> eV) or RHO/DRHO (e/Bohr**3 -> e/Ang**3),
+    case-insensitive. file_path overrides the simulation or fallback label.
+    axis: 0/1/2 or x/y/z, selecting the lattice direction; planes span
+    the other two cell vectors. Coordinates measure perpendicular distance
+    from the cell origin, excluding the periodic endpoint. Spin components
+    are averaged as in the original pav scripts, not summed.
+    """
+    target = str(target).strip().upper()
+    if target not in ('VH', 'VT', 'RHO', 'DRHO'):
+        raise ValueError('target must be VH, VT, RHO, or DRHO')
+    if isinstance(axis, str):
+        axis = {'x': 0, 'y': 1, 'z': 2}.get(axis.strip().lower(), -1)
+    if isinstance(axis, (bool, np.bool_)) or not isinstance(axis, (int, np.integer)) or axis not in (0, 1, 2):
+        raise ValueError('axis must be 0, 1, 2, x, y, or z')
 
-    # read PDOS
-    lines = open('%s.PAV' % label).readlines()
-    energy = []; pot = []
-                                                                      
-    for line in lines:
-        if not line.startswith('#'):
-            tmp = line.split()
-            e = float(tmp[0]); p = float(tmp[1])
-            energy.append(e); pot.append(p)
-
-    return energy, pot
+    path = _postprocess_path(file_path, simobj, label, target)
+    cell, mesh, grid = siestaio.read_grid(path)
+    normal = np.cross(cell[(axis+1) % 3], cell[(axis+2) % 3])
+    area = np.linalg.norm(normal)
+    volume = abs(np.dot(cell[axis], normal))
+    if not np.isfinite(volume) or not np.isfinite(area) or area <= 0 or volume <= 0:
+        raise ValueError('Grid cell must have finite, nonzero volume')
+    coordinate = np.arange(mesh[axis]) * (volume / area / mesh[axis] / ang2bohr)
+    average_axes = tuple(i for i in range(4) if i != axis+1)
+    values = np.mean(grid, axis=average_axes)
+    values = values * (Ry2eV if target in ('VH', 'VT') else ang2bohr**3)
+    return coordinate, values
 
 
 def get_total_energy(output_file='stdout.txt'):
@@ -1267,169 +934,11 @@ def get_total_energy(output_file='stdout.txt'):
 bohr2ang = 1./ang2bohr
 
 def read_fdf(file_name):
-    vec_block = []; atoms_block = []; abc_cell_block = []
-    atoms_length = 0; species = []
-    n_of_species = 0; name = ''; atoms = []; cell = []; cell_scale = ''
-    lattice_constant = 0.
-    _is_ang_scale = 0; _is_bohr_scale = 0; _is_scaled_ang_scale = 0
-    _is_fraction_scale = 0
-
-    with open(file_name) as f:
-        lines = f.readlines()
-
-    i = 0
-    for line in lines:
-        #print i
-        
-        line_s = line.split(); keyword = ''
-
-        if line_s:
-            keyword = line_s[0].lower()
-            #print keyword
-
-        if keyword == "systemlabel":
-            name = line_s[1]
-
-        elif keyword == "latticeconstant":
-            lattice_constant = float(line_s[1])
-            #print lattice_constant
-            try:
-                cell_scale = line_s[2]
-            except:
-                cell_scale = 'Ang'
-
-        elif keyword == "atomiccoordinatesformat":
-            if line_s[1].lower() == 'ang':
-                _is_ang_scale = 1
-            elif line_s[1].lower() == 'bohr':
-                _is_bohr_scale = 1
-            elif line_s[1].lower() == 'scaledcartesian':
-                #print "ON"
-                _is_scaled_ang_scale = 1
-            elif line_s[1].lower() == 'fractional':
-                _is_fraction_scale = 1
-            else:
-                #print 'Warning : Default atomic scale, "Ang".\n'
-                pass
-
-        elif keyword == "numberofatoms":
-            atoms_length = int(line_s[1])
-            #print "natms", atoms_length
-
-        elif keyword == "numberofspecies":
-            n_of_species = int(line_s[1])
-            #print "nspec", n_of_species
-
-        elif keyword =="%block":
-            keyword_ = line_s[1].lower()
-            #print keyword_
-            
-            if keyword_ == "latticeparameters":
-                abc_cell_block = lines[i+1].split()
-
-            elif keyword_ == "latticevectors":
-                vec_block = lines[i+1:i+4]
-
-            elif keyword_ == "atomiccoordinatesandatomicspecies":
-                atoms_block = lines[i+1:i+1+atoms_length]
-                #print "atoms_block", atoms_block
-
-            elif keyword_ == "chemicalspecieslabel":
-                temp = lines[i+1:i+1+n_of_species]
-                for spec in temp:
-                    species.append(spec.split()[2])
-                #print species
-        i +=1
-
-    # cell converting
-    va = 0; vb = 0; vc = 0
-    if (not abc_cell_block) and vec_block:
-        a1, a2, a3 = vec_block[0].split()
-        a1 = float(a1); a2 = float(a2); a3 = float(a3)
-        b1, b2, b3 = vec_block[1].split()
-        b1 = float(b1); b2 = float(b2); b3 = float(b3)
-        c1, c2, c3 = vec_block[2].split()
-        c1 = float(c1); c2 = float(c2); c3 = float(c3)
-        va = np.array([a1, a2, a3])
-        vb = np.array([b1, b2, b3])
-        vc = np.array([c1, c2, c3])
-        if cell_scale == 'Ang':
-            va = lattice_constant * va
-            vb = lattice_constant * vb
-            vc = lattice_constant * vc
-        elif cell_scale == 'Bohr':
-            va = lattice_constant * bohr2ang * va
-            vb = lattice_constant * bohr2ang * vb
-            vc = lattice_constant * bohr2ang * vc
-        else:
-            #print "Can`t find cell scale"
-            pass
-
-        #a, b, c, alpha, beta, gamma = convert_xyz2abc(va, vb, vc)
-        cell = np.array([va,vb,vc])
-
-    elif abc_cell_block and (not vec_block):
-        a, b, c, alpha, beta, gamma = abc_cell_block.split()
-        a = float(a); b = float(b); c = float(c)
-        alpha = float(alpha); beta = float(beta); gamma = float(gamma)
-        cell = [a, b, c, alpha, beta, gamma]
-
-    # atoms
-    iserial = 1
-    for atm in atoms_block:
-
-        if len(atm.split()) == 4:
-            x, y, z, spec = atm.split()
-            serial = iserial
-            iserial += 1
-        elif len(atm.split()) >= 5:
-            x, y, z, spec, serial = atm.split()[:5]
-
-        else:
-            continue
-
-        x = float(x); y = float(y); z = float(z); spec = int(spec)
-        
-        if _is_ang_scale:
-            pass
-        elif _is_bohr_scale:
-            x = bohr2ang * x; y = bohr2ang * y; z = bohr2ang * z
-
-        elif _is_scaled_ang_scale:
-            #if vec_cell:
-            x = lattice_constant*x
-            y = lattice_constant*y
-            z = lattice_constant*z
-            #elif not vec_cell:
-            #    print "Can`t guess cell scale and type\n"
-#        elif _is_fraction_scale:
-        
-        atom = (species[spec-1], x, y, z)
-        atoms.append(atom)
-
-    if cell.shape == (3,3):
-        #XYZ.write_xyz(file_name.replace('fdf','xyz'), atoms, cell)
-        return AtomsSystem(atoms, cell=cell)
-    else:
-        #XYZ.write_xyz(file_name.replace('fdf','xyz'), atoms)
-        return AtomsSystem(atoms, cell=None)
+    return siestaio.read_fdf(file_name)
 
 
 def read_struct_out(file_name):
-    f = open(file_name)
-    lines = f.readlines()
-    v1 = Vector(float(lines[0].split()[0]),float(lines[0].split()[1]),float(lines[0].split()[2]))
-    v2 = Vector(float(lines[1].split()[0]),float(lines[1].split()[1]),float(lines[1].split()[2]))
-    v3 = Vector(float(lines[2].split()[0]),float(lines[2].split()[1]),float(lines[2].split()[2]))
-    num_at = int(lines[3].split()[0])
-    atoms = []
-    for line in lines[4:num_at+4]:
-        spec, atn, sx, sy, sz = line.split()
-        sx, sy, sz = float(sx), float(sy), float(sz)
-        symb = atomic_symbol[int(atn)]
-        position = sx*v1 + sy*v2 + sz*v3
-        atoms.append(Atom(symb, position))
-    return AtomsSystem(atoms, cell = [v1,v2,v3])
+    return siestaio.read_struct_out(file_name)
 
 
 def get_eos(pattern='*', struct_file='STRUCT.fdf'):

@@ -115,8 +115,6 @@ siesta_util_band = "gnubands"
 siesta_util_dos = "Eig2DOS"
 siesta_util_pdos = "fmpdos"
 siesta_util_rho = "rho2xsf"
-siesta_util_vh = "macroave"
-siesta_util_pldos = "/path/to/PyProjection.py"
 ```
 
 For PDOS extraction, make sure `siesta_util_location` points to the directory containing `fmpdos`, or set `siesta_util_pdos` to the full executable path.
@@ -199,6 +197,7 @@ py4siesta
 | `11` | Plot Band Structure | A `.bands` file and energy window. | `band.png`, plus band-path helper files. |
 | `12` | Generate PDOS CSV | SIESTA `.PDOS`, matching `.EIG` and `.DOS`, energy window, and `fmpdos` atom/orbital selections. | `PDOS.csv` and `pdos.png`. |
 | `13` | Plot PLDOS | A `.PDOS` file, matching `.xyz` and `.EIG`, and energy window. | `pldos.png`, plus PLDOS helper files. |
+| `14` | Planeaverage grid | Select VH, VT, RHO, or DRHO and axis x/y/z (0/1/2); a matching grid file. | `planeaverage_<TARGET>_<axis>.png` and `.txt` beside the input file. |
 
 Notes:
 
@@ -206,6 +205,7 @@ Notes:
 - Menu `12` uses a matching `<label>.bands` file for `E_v` when available; otherwise it estimates `E_v` from `<label>.EIG`.
 - Menu `12` removes existing same-named `fmpdos` output files before regenerating PDOS data.
 - Menu `13` automatically selects a local `.PDOS` file when one is present.
+- Menu `14` accepts case-insensitive targets and axes, selects the first matching local file or asks for its path, and overwrites same-named outputs. TXT columns are distance (Å) and average value: eV for VH/VT, e/Å³ for RHO/DRHO. Spin components are averaged.
 
 ### Utility
 
@@ -276,6 +276,7 @@ py4siesta-tool eos-sliding --selection 20-30 --mode fractional --vector 0.25 0.5
 py4siesta-tool band --bands-path Solid.bands --emin -2 --emax 4
 py4siesta-tool pdos --pdos-path MgO.PDOS --orbital Mg_0 O_0 --emin -4 --emax 12
 py4siesta-tool pldos --pdos-path Device.PDOS --emin -4 --emax 2
+py4siesta-tool planeaverage-grid --file-path Device.VH --target vh --axis z
 ```
 
 For `py4siesta-tool pdos`, pass one or more `--orbital` selections in `atom_or_species[_n[_l[_m]]]` format, for example `Mg_0`, `O_0`, or `C_2_1_0`. Multiple selections may be space-separated, comma-separated, or provided with repeated `--orbital` options.
@@ -358,9 +359,13 @@ The skill instructs Codex to keep `config.json`, `history/`, `memory/`, and pers
 `~/.local/state/py4siesta-skill`; set `PY4SIESTA_SKILL_STATE` before starting Codex or
 provide an external directory in your prompt to choose another location.
 
-For execution tasks, the agent records attempts and results using the bundled
-templates. Verified lessons can produce scoped personal workflow revisions; unknown
-failure causes remain in history. Your current request overrides remembered defaults.
+The skill selectively saves new preferences, verified environment facts, useful
+observations, and reusable workflows. New reusable workflows blocked by tool
+limitations remain drafts, with evidence of the limitation retained for later review.
+History is kept when needed for resumption, continued investigation, validation,
+or requested auditing; unchanged repeats alone create no new record. Before finishing,
+the agent checks what needs saving and reads back changed records to verify persistence.
+Your current request overrides remembered defaults.
 Public recipes and installed skill instructions are not rewritten during calculations.
 The agent reports if filesystem permissions prevent saving records. No records are
 written merely by registering the skill, and no learning continues after the session

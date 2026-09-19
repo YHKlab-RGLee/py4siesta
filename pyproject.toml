@@ -53,4 +53,4 @@ py4siesta-agent = "py4siesta_agent.cli:main"
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["py4siesta", "py4siesta_agent*", "NanoCore"]
+include = ["py4siesta", "py4siesta_agent*", "NanoCore", "NanoCore.utils"]

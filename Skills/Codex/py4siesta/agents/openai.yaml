@@ -2,3 +2,6 @@ interface:
   display_name: "py4siesta"
   short_description: "Compose and improve SIESTA calculation workflows"
   default_prompt: "Use $py4siesta to perform my calculation task by composing existing core/tool operations, reusing personal memory, and saving validated workflow revisions."
+
+policy:
+  allow_implicit_invocation: false

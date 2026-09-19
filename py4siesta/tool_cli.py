@@ -10,7 +10,7 @@ import numpy as np
 from NanoCore import s2
 
 from .operations import SiestaWorkflow, initialize_origin, prepare_sliding_cases
-from .post_process import generate_pdos_csv, plot_band_structure, plot_pldos
+from .post_process import process_band, process_pdos, process_pldos, process_planeaverage_grid
 
 
 class _ArgumentParser(argparse.ArgumentParser):
@@ -157,7 +157,7 @@ def _cmd_submit(args):
 
 
 def _cmd_band(args):
-    return plot_band_structure(bands_path=args.bands_path, emin=args.emin, emax=args.emax)
+    return process_band(file_path=args.bands_path, emin=args.emin, emax=args.emax)
 
 
 def _parse_orbital_arguments(values):
@@ -173,8 +173,8 @@ def _parse_orbital_arguments(values):
 
 
 def _cmd_pdos(args):
-    return generate_pdos_csv(
-        pdos_path=args.pdos_path,
+    return process_pdos(
+        file_path=args.pdos_path,
         orbital_indices=_parse_orbital_arguments(args.orbital),
         emin=args.emin,
         emax=args.emax,
@@ -182,8 +182,8 @@ def _cmd_pdos(args):
 
 
 def _cmd_pldos(args):
-    return plot_pldos(
-        pdos_path=args.pdos_path,
+    return process_pldos(
+        file_path=args.pdos_path,
         emin=args.emin,
         emax=args.emax,
         zmin=args.zmin,
@@ -191,6 +191,11 @@ def _cmd_pldos(args):
         broad=args.broad,
         npoints=args.npoints,
     )
+
+
+def _cmd_planeaverage_grid(args):
+    axis = 'xyz'[int(args.axis)] if args.axis.isdigit() else args.axis
+    return process_planeaverage_grid(file_path=args.file_path, target=args.target, axis=axis)
 
 
 def _cmd_move_structure(args):
@@ -335,6 +340,12 @@ def build_parser():
     command.add_argument("--broad", type=float, default=0.02)
     command.add_argument("--npoints", type=int, default=1001)
     command.set_defaults(func=_cmd_pldos)
+
+    command = subparsers.add_parser("planeaverage-grid", help="Plot a grid planar average and save TXT data.")
+    command.add_argument("--file-path")
+    command.add_argument("--target", type=str.upper, choices=['VH', 'VT', 'RHO', 'DRHO'], default='VH')
+    command.add_argument("--axis", type=str.lower, choices=['x', 'y', 'z', '0', '1', '2'], default='z')
+    command.set_defaults(func=_cmd_planeaverage_grid)
 
     command = subparsers.add_parser("move-structure", help="Translate the origin structure.")
     command.add_argument("--dx", type=float, required=True)

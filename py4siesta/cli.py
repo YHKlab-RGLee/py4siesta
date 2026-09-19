@@ -9,7 +9,7 @@ from .operations import (
     sliding_case_label as _sliding_case_label,
     sliding_displacement as _sliding_displacement,
 )
-from .post_process import generate_pdos_csv, plot_band_structure, plot_pldos
+from .post_process import process_band, process_pdos, process_pldos, process_planeaverage_grid
 
 
 BANNER = r"""            \\\///
@@ -34,6 +34,7 @@ MENU = """ ======================= K-point Sampling ========================
  9) K-point Sampling   10) Structure Optimization
  ========================= Post-Process ==========================
  11) Band Structure    12) PDOS      13) PLDOS
+ 14) Planeaverage grid
  ============================ Utility ============================
  01) Generate Geometries
 
@@ -284,7 +285,7 @@ def main():
             mode = None
 
     workflow = None
-    if mode not in {0, 11, 12, 13, None}:
+    if mode not in {0, 11, 12, 13, 14, None}:
         workflow = SiestaWorkflow()
 
     if mode in {4, 5, 6, 7, 8} and workflow is not None:
@@ -379,7 +380,7 @@ def main():
         bands_path = _select_existing_or_prompt("*.bands", "Input .bands file path: ")
         emin = _prompt_optional_float("Input minimum energy for band structure (eV)", default=-2.0)
         emax = _prompt_optional_float("Input maximum energy for band structure (eV)", default=4.0)
-        result = plot_band_structure(bands_path=bands_path, emin=emin, emax=emax)
+        result = process_band(file_path=bands_path, emin=emin, emax=emax)
         print(f"Band gap: {result['bandgap']:.6f} eV")
         print(f"Generated: {result['figure']}, {result['special_k']}, {result['kpath']}, {result['bands']}")
 
@@ -388,7 +389,7 @@ def main():
         emin = _prompt_optional_float("Input minimum energy for PDOS data (eV)", default=-4.0)
         emax = _prompt_optional_float("Input maximum energy for PDOS data (eV)", default=12.0)
         orbital_indices = _prompt_pdos_selections()
-        result = generate_pdos_csv(
+        result = process_pdos(
             orbital_indices=orbital_indices,
             emin=emin,
             emax=emax,
@@ -400,9 +401,20 @@ def main():
         pdos_path = _select_existing_or_prompt("*.PDOS", "Input .PDOS file path: ")
         emin = _prompt_optional_float("Input minimum energy for PLDOS plot (eV)", default=-4.0)
         emax = _prompt_optional_float("Input maximum energy for PLDOS plot (eV)", default=2.0)
-        result = plot_pldos(pdos_path=pdos_path, emin=emin, emax=emax)
+        result = process_pldos(file_path=pdos_path, emin=emin, emax=emax)
         print(f"Fermi level: {result['fermi_level']:.6f} eV")
         print(f"Generated: {result['figure']}, {result['z']}, {result['energy']}, {result['pldos']}")
+
+    elif mode == 14:
+        _show_section("Planeaverage grid")
+        targets = {'1': 'VH', '2': 'VT', '3': 'RHO', '4': 'DRHO',
+                   'vh': 'VH', 'vt': 'VT', 'rho': 'RHO', 'drho': 'DRHO'}
+        target = targets[_prompt_choice("Target (1: VH, 2: VT, 3: RHO, 4: DRHO): ", targets)]
+        axis = _prompt_choice("Axis (x/0, y/1, z/2): ", ['x', 'y', 'z', '0', '1', '2'])
+        axis = 'xyz'[int(axis)] if axis.isdigit() else axis
+        file_path = _select_existing_or_prompt(f"*.{target}", f"Input .{target} file path: ")
+        result = process_planeaverage_grid(file_path=file_path, target=target, axis=axis)
+        print(f"Generated: {result['figure']}, {result['txt']}")
 
     elif mode == "01":
         _run_generate_geometries_menu(workflow)

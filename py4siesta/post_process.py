@@ -1,8 +1,6 @@
 import glob
-import math
 import os
 import re
-import subprocess
 import tempfile
 from pathlib import Path
 
@@ -15,7 +13,7 @@ import numpy as np
 
 
 class BandStructureData:
-    def __init__(self, kpath, energies, nbands, nspin, special_k, labels, fermi_level, bandgap, vbm):
+    def __init__(self, kpath, energies, nbands, nspin, special_k, labels, fermi_level, bandgap, vbm, cbm=None):
         self.kpath = kpath
         self.energies = energies
         self.nbands = nbands
@@ -25,6 +23,7 @@ class BandStructureData:
         self.fermi_level = fermi_level
         self.bandgap = bandgap
         self.vbm = vbm
+        self.cbm = cbm
 
 
 def _find_bands_file(bands_path=None):
@@ -60,71 +59,18 @@ def _clean_k_label(label):
     return cleaned
 
 
-def read_band_structure(bands_path=None):
-    path = _find_bands_file(bands_path)
-    lines = path.read_text().splitlines()
-    if len(lines) < 5:
-        raise ValueError(f"{path} is too short to be a SIESTA .bands file.")
+def read_band(file_path=None):
+    from NanoCore import s2
 
-    fermi_level = float(lines[0].split()[0])
-    nbands, nspin, nkpoints = [int(value) for value in lines[3].split()[:3]]
-    total_bands = nbands * nspin
-    lines_per_kpoint = int(math.ceil(float(total_bands) / 10.0))
-
-    kpath = np.zeros(nkpoints, dtype=float)
-    energies = np.zeros((total_bands, nkpoints), dtype=float)
-    line_index = 4
-
-    for ikpoint in range(nkpoints):
-        band_index = 0
-        for segment_index in range(lines_per_kpoint):
-            words = lines[line_index].split()
-            line_index += 1
-            if segment_index == 0:
-                kpath[ikpoint] = float(words[0])
-                values = words[1:]
-            else:
-                values = words
-
-            for value in values:
-                if band_index >= total_bands:
-                    break
-                energies[band_index, ikpoint] = float(value)
-                band_index += 1
-
-    nspecial = int(lines[line_index].split()[0])
-    line_index += 1
-
-    special_k = []
-    labels = []
-    for line in lines[line_index:line_index + nspecial]:
-        words = line.split()
-        if len(words) < 2:
-            continue
-        special_k.append(float(words[0]))
-        labels.append(_clean_k_label(words[1]))
-
-    below_fermi = energies[energies <= fermi_level]
-    above_fermi = energies[energies > fermi_level]
-    vbm = float(np.max(below_fermi)) if below_fermi.size else fermi_level
-    cbm = float(np.min(above_fermi)) if above_fermi.size else fermi_level
-    bandgap = max(0.0, cbm - vbm)
-
-    return BandStructureData(
-        kpath=kpath,
-        energies=energies,
-        nbands=nbands,
-        nspin=nspin,
-        special_k=np.array(special_k, dtype=float),
-        labels=labels,
-        fermi_level=fermi_level,
-        bandgap=bandgap,
-        vbm=vbm,
-    )
+    path = _find_bands_file(file_path)
+    data = s2.get_band(file_path=path, return_data=True)
+    data["energies"] = data["energies"].reshape(data.pop("nkpoints"), -1).T
+    data["labels"] = [_clean_k_label(label) for label in data["labels"]]
+    return BandStructureData(**data)
 
 
-def plot_band_structure(bands_path=None, emin=-2.0, emax=4.0, output_path="band.png"):
-    data = read_band_structure(bands_path)
+def process_band(file_path=None, emin=-2.0, emax=4.0, figure_path="band.png"):
+    data = read_band(file_path)
     energy_reference = data.vbm
     shifted_energies = data.energies - energy_reference
 
@@ -156,7 +102,7 @@ def plot_band_structure(bands_path=None, emin=-2.0, emax=4.0, output_path="band.
         ax.axvline(x=kpoint, color="k", linestyle="--", linewidth=2.0)
 
     fig.tight_layout()
-    fig.savefig(output_path, dpi=300, transparent=True)
+    fig.savefig(figure_path, dpi=300, transparent=True)
     plt.close(fig)
 
     np.savetxt("specialk.csv", data.special_k, delimiter=",")
@@ -164,7 +110,7 @@ def plot_band_structure(bands_path=None, emin=-2.0, emax=4.0, output_path="band.
     np.savetxt("band.csv", shifted_energies.T, delimiter=",")
 
     return {
-        "figure": Path(output_path),
+        "figure": Path(figure_path),
         "special_k": Path("specialk.csv"),
         "kpath": Path("kpath.csv"),
         "bands": Path("band.csv"),
@@ -218,47 +164,16 @@ def _find_optional_matching_file(label, suffix, work_dir):
 
 
 def _read_eig_levels(eig_path):
-    lines = eig_path.read_text().splitlines()
-    if len(lines) < 2:
-        raise ValueError(f"{eig_path} is too short to be a SIESTA .EIG file.")
+    from NanoCore import s2
 
-    fermi_level = float(lines[0].split()[0])
-    neig, nspin, nkpoints = [int(value) for value in lines[1].split()[:3]]
-    total_eigenvalues = neig * nspin
-    lines_per_kpoint = int(math.ceil(float(total_eigenvalues) / 10.0))
-
-    energies = np.zeros((nkpoints, total_eigenvalues), dtype=float)
-    line_index = 2
-    for ikpoint in range(nkpoints):
-        eigenvalue_index = 0
-        for segment_index in range(lines_per_kpoint):
-            words = lines[line_index].split()
-            line_index += 1
-            values = words[1:] if segment_index == 0 else words
-            for value in values:
-                if eigenvalue_index >= total_eigenvalues:
-                    break
-                energies[ikpoint, eigenvalue_index] = float(value)
-                eigenvalue_index += 1
-
-    occupied_cutoff = fermi_level + (8.617e-5 * 300.0 * math.log(99.0))
-    below_fermi = energies[energies <= occupied_cutoff]
-    above_fermi = energies[energies > occupied_cutoff]
-    vbm = float(np.max(below_fermi)) if below_fermi.size else fermi_level
-    cbm = float(np.min(above_fermi)) if above_fermi.size else fermi_level
-    return {
-        "fermi_level": fermi_level,
-        "vbm": vbm,
-        "cbm": cbm,
-        "bandgap": max(0.0, cbm - vbm),
-        "nspin": nspin,
-    }
+    data = s2.get_eig(file_path=eig_path, return_data=True)
+    return {key: data[key] for key in ('fermi_level', 'vbm', 'cbm', 'bandgap', 'nspin')}
 
 
 def _read_pdos_energy_reference(label, work_dir, eig_path):
     bands_path = _find_optional_matching_file(label, ".bands", work_dir)
     if bands_path is not None:
-        band_data = read_band_structure(bands_path)
+        band_data = read_band(bands_path)
         return {
             "fermi_level": band_data.fermi_level,
             "vbm": band_data.vbm,
@@ -364,27 +279,15 @@ def _normalize_pdos_selection(selection):
 
 
 def _run_fmpdos_selection(pdos_file, selection, executable):
-    input_lines = [
-        pdos_file.name,
-        selection["output"],
-        selection["target"],
-    ]
+    from NanoCore import s2
 
-    n_value = selection.get("n", 0)
-    input_lines.append(str(n_value))
-    if n_value != 0:
-        l_value = selection.get("l", -1)
-        input_lines.append(str(l_value))
-        if l_value != -1:
-            input_lines.append(str(selection.get("m", 9)))
-
-    subprocess.run(
-        [str(executable)],
-        input="\n".join(input_lines) + "\n",
-        text=True,
-        check=True,
-        stdout=subprocess.DEVNULL,
-    )
+    target = selection["target"]
+    indices = [int(target)] if target.isdigit() else None
+    return s2.get_pdos(file_path=pdos_file, atom_index=indices,
+                       species=None if indices else [target],
+                       n=selection.get("n", 0), l=selection.get("l", -1),
+                       m=selection.get("m", 9), output_path=selection["output"],
+                       executable=executable)
 
 
 _normalize_fmpdos_selection = _normalize_pdos_selection
@@ -513,15 +416,15 @@ def _plot_pdos(data, labels, output_path, emin, emax):
     plt.close(fig)
 
 
-def generate_pdos_csv(
-    pdos_path=None,
+def process_pdos(
+    file_path=None,
     orbital_indices=None,
     emin=-4.0,
     emax=12.0,
-    output_path="PDOS.csv",
+    csv_path="PDOS.csv",
     figure_path="pdos.png",
 ):
-    path = _find_pdos_file(pdos_path).resolve()
+    path = _find_pdos_file(file_path).resolve()
     work_dir = path.parent
     label = path.name[:-5] if path.name.endswith(".PDOS") else path.stem
     eig_path = _find_matching_file(label, ".EIG", work_dir)
@@ -537,35 +440,34 @@ def generate_pdos_csv(
         nspin = reference["nspin"]
         fmpdos_executable = _resolve_siesta_utility("fmpdos")
 
-        generated_files = []
+        projected_data = []
         generated_labels = []
         for selection in selected_orbitals:
-            output_file = Path(selection["output"])
-            if output_file.exists():
-                output_file.unlink()
-            _run_fmpdos_selection(Path(path.name), selection, fmpdos_executable)
-            if not output_file.is_file():
-                raise FileNotFoundError(f"fmpdos did not generate expected output file: {output_file}")
-            generated_files.append(output_file)
+            projected_data.append(_run_fmpdos_selection(Path(path.name), selection, fmpdos_executable))
             generated_labels.append(selection["output"])
 
         energy, dos_columns = _read_pdos_columns(Path(dos_path.name), vbm, emin, emax, nspin)
         data = np.hstack((energy, dos_columns))
         plot_labels = ["total"] if dos_columns.shape[1] == 1 else ["total spin 1", "total spin 2"]
 
-        for generated_file, generated_label in zip(generated_files, generated_labels):
-            _, projected_columns = _read_pdos_columns(generated_file, vbm, emin, emax, nspin)
+        for (projected_energy, dos_up, dos_down), generated_label in zip(projected_data, generated_labels):
+            shifted_energy = np.asarray(projected_energy) - vbm
+            mask = (shifted_energy > emin) & (shifted_energy < emax)
+            if not np.any(mask):
+                raise ValueError(f"No PDOS data in {generated_label} within the requested energy window.")
+            columns = [dos_up, -np.asarray(dos_down)] if nspin > 1 and dos_down else [dos_up]
+            projected_columns = np.column_stack(columns)[mask]
             data = np.hstack((data, projected_columns))
             if projected_columns.shape[1] == 1:
                 plot_labels.append(generated_label)
             else:
                 plot_labels.extend([f"{generated_label} spin 1", f"{generated_label} spin 2"])
 
-        np.savetxt(output_path, data, delimiter=",")
+        np.savetxt(csv_path, data, delimiter=",")
         _plot_pdos(data, plot_labels, figure_path, emin, emax)
 
         return {
-            "csv": work_dir / output_path,
+            "csv": work_dir / csv_path,
             "figure": work_dir / figure_path,
             "fermi_level": fermi_level,
             "vbm": vbm,
@@ -579,19 +481,19 @@ def generate_pdos_csv(
         os.chdir(previous_dir)
 
 
-def plot_pldos(
-    pdos_path=None,
+def process_pldos(
+    file_path=None,
     emin=-4.0,
     emax=2.0,
     zmin=None,
     zmax=None,
     broad=0.02,
     npoints=1001,
-    output_path="pldos.png",
+    figure_path="pldos.png",
 ):
     from NanoCore import io, s2
 
-    path = _find_pdos_file(pdos_path).resolve()
+    path = _find_pdos_file(file_path).resolve()
     work_dir = path.parent
     label = path.name[:-5] if path.name.endswith(".PDOS") else path.stem
     xyz_path = work_dir / f"{label}.xyz"
@@ -663,7 +565,7 @@ def plot_pldos(
         ax.tick_params(labelbottom=False, labelleft=False)
 
         fig.tight_layout()
-        fig.savefig(output_path, dpi=300, transparent=True)
+        fig.savefig(figure_path, dpi=300, transparent=True)
         plt.close(fig)
 
         np.savetxt("pldos_z.csv", z_values, delimiter=",")
@@ -671,7 +573,7 @@ def plot_pldos(
         np.savetxt("pldos.csv", log_dos, delimiter=",")
 
         return {
-            "figure": work_dir / output_path,
+            "figure": work_dir / figure_path,
             "z": work_dir / "pldos_z.csv",
             "energy": work_dir / "pldos_energy.csv",
             "pldos": work_dir / "pldos.csv",
@@ -679,3 +581,59 @@ def plot_pldos(
         }
     finally:
         os.chdir(previous_dir)
+
+
+def process_planeaverage_grid(file_path=None, target='VH', axis='z', figure_path=None, txt_path=None):
+    from NanoCore import s2
+
+    target = str(target).strip().upper()
+    if target not in ('VH', 'VT', 'RHO', 'DRHO'):
+        raise ValueError('target must be VH, VT, RHO, or DRHO')
+    if file_path is None:
+        matches = sorted(path for path in Path.cwd().iterdir()
+                         if path.is_file() and path.suffix.upper() == '.' + target)
+        if not matches:
+            raise FileNotFoundError(f"No *.{target} file found in the current directory.")
+        file_path = matches[0]
+    path = Path(file_path).expanduser().resolve()
+    coordinate, values = s2.planeaverage_grid(target=target, axis=axis, file_path=path)
+    axis_name = str(axis).strip().lower() if isinstance(axis, str) else 'xyz'[axis]
+    name = f"planeaverage_{target}_{axis_name}"
+    figure_path = path.parent / (figure_path or name + '.png')
+    txt_path = path.parent / (txt_path or name + '.txt')
+    potential = target in ('VH', 'VT')
+    unit = 'eV' if potential else 'e/Ang**3'
+
+    fig, ax = plt.subplots(figsize=(6.0, 4.0))
+    for side in ['top', 'bottom', 'left', 'right']:
+        ax.spines[side].set_linewidth(1.5)
+    ax.tick_params(axis='both', direction='in', width=1.5, length=6, labelsize=14)
+    ax.plot(coordinate, values, color='k', linewidth=2)
+    ax.set_xlabel(r'Plane distance ($\AA$)', fontsize=16)
+    ax.set_ylabel(target + (r' (eV)' if potential else r' ($e/\AA^3$)'), fontsize=16)
+    ax.set_title(f'{path.name} — {axis_name} axis')
+    fig.tight_layout()
+    fig.savefig(figure_path, dpi=300, transparent=True)
+    plt.close(fig)
+    np.savetxt(txt_path, np.column_stack((coordinate, values)),
+               fmt='%17.15e', header=f'coordinate (Ang)  {target} ({unit})')
+    return {'figure': figure_path, 'txt': txt_path, 'source': path,
+            'target': target, 'axis': axis_name, 'coordinate_unit': 'Ang', 'value_unit': unit}
+
+
+def read_band_structure(bands_path=None):
+    return read_band(file_path=bands_path)
+
+
+def plot_band_structure(bands_path=None, emin=-2.0, emax=4.0, output_path="band.png"):
+    return process_band(bands_path, emin, emax, output_path)
+
+
+def generate_pdos_csv(pdos_path=None, orbital_indices=None, emin=-4.0, emax=12.0,
+                      output_path="PDOS.csv", figure_path="pdos.png"):
+    return process_pdos(pdos_path, orbital_indices, emin, emax, output_path, figure_path)
+
+
+def plot_pldos(pdos_path=None, emin=-4.0, emax=2.0, zmin=None, zmax=None,
+               broad=0.02, npoints=1001, output_path="pldos.png"):
+    return process_pldos(pdos_path, emin, emax, zmin, zmax, broad, npoints, output_path)

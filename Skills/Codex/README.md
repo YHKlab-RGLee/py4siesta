@@ -23,7 +23,9 @@ the script and keep it set when starting Codex. The location must be outside the
 repository and installed skill tree. No workflow or history records are created
 during registration.
 
-Start a new Codex session, check `/skills`, then invoke `$py4siesta`. Additional
+Start a new Codex session, check `/skills`, then invoke `$py4siesta` explicitly.
+Automatic invocation is disabled; SIESTA-related requests alone do not activate
+the skill. Additional
 writable roots apply to `workspace-write`; the script does not change your sandbox
 mode. If the host manages session permissions separately, it must also allow the
 state path. Registration alone cannot override that policy. When a task needs persistent state, verify that the skill reports a saved record
@@ -31,11 +33,15 @@ in this directory.
 
 ## Selective memory
 
-Routine unchanged success creates no new record. The skill saves meaningful
+Routine unchanged success with no new useful information creates no new record. The skill saves meaningful
 workflow improvements, new preferences/environment facts, and short observations
 of actual friction only when useful. It retains minimal history for resumption,
 uncertain submissions, necessary validation, or explicitly requested auditing.
 Existing calculation logs are referenced rather than copied.
+New reusable workflows are saved even when tool limitations prevent completion;
+they remain drafts until validated. New limitations are recorded as observations
+with evidence for later review. Before finishing, the skill checks the save criteria
+and reads back any changed state files to confirm persistence.
 
 Reusable procedures belong in workflows; observations describe what happened,
 including inefficient successful work, without proposing implementation changes.
