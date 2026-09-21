@@ -190,3 +190,12 @@ pending jobs, autonomous one-command continuation, scheduler failure,
 incomplete geometry output, and rejection of model-provided command strings.
 No live model, database, scheduler, SIESTA executable, or DFT calculation is
 required.
+
+### Shared Slurm operations
+
+`py4siesta.scheduler` owns Slurm submission, status querying, cancellation, and
+script validation. `py4siesta_agent.scheduler` re-exports its existing backend/error
+imports and retains the workflow node budget and job-list orchestration. A status
+query failure keeps the last active state and records `query_error`, so it neither
+frees the node budget nor turns a communication failure into a failed calculation.
+The next successful query clears that error.

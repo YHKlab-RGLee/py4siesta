@@ -5,6 +5,13 @@ not implement calculations or change the meaning of upstream arguments.
 """
 
 EXCLUDED = {
+    'py4siesta.scheduler.SchedulerError': 'Exception type, not a scheduler operation.',
+    'py4siesta.scheduler.SlurmBackend': 'Compatibility adapter; use job-submit, job-status, or job-cancel.',
+    'py4siesta.scheduler.SlurmBackend.submit': 'Compatibility adapter; use job-submit.',
+    'py4siesta.scheduler.SlurmBackend.status': 'Compatibility adapter; use job-status.',
+    'py4siesta.scheduler.SlurmBackend.cancel': 'Compatibility adapter; use job-cancel.',
+    'py4siesta.scheduler.SlurmBackend.normalize_status': 'Compatibility helper; job-status returns normalized states.',
+    'py4siesta.scheduler.validate_scheduler_script': 'Agent budget validation requires a backend instance; not a standalone job operation.',
     'py4siesta.cli.main': 'Interactive numbered menu; use the individual tool_cli commands.',
     'py4siesta.tool_cli.main': 'Process entry point; the execute API and individual commands are exposed.',
     'py4siesta.tool_cli.build_parser': 'CLI parser factory; its commands are exposed as typed MCP tools.',
@@ -16,6 +23,10 @@ PARAMETERS = {
     'atoms': 'Atom/AtomsSystem handle where the signature requires an object; AtomsSystem construction accepts a list of Atom handles or legacy rows encoded as {"$tuple":[symbol,[x,y,z]]}.',
     'struct': 'AtomsSystem handle returned by a structure reader or constructor.',
     'simobj': 'Siesta handle, or null to use the file/label arguments.',
+    'case_directory': 'Existing calculation directory; relative script_path is resolved here.',
+    'script_path': 'User-prepared Slurm script; any filename, without automatic modification.',
+    'job_id': 'Positive Slurm job ID or array task ID (123_4).',
+    'cluster': 'Optional single Slurm cluster name returned by submission.',
     'context': 'SiestaContext handle initialized in the calculation workdir.',
     'symbol': 'Element symbol or atomic number, as accepted by the original method.',
     'symb': 'Element symbol.',
@@ -146,6 +157,15 @@ def describe(module, owner, name, kind, doc):
         if owner == 'JobSubmissionOperation' or name == 'qsub':
             category = 'submission'
             effects = ['Runs sbatch; creates external jobs, possibly partially before error. No automatic retry or completion guarantee.']
+    elif module == 'py4siesta.scheduler':
+        category = 'submission'
+        units = 'Job IDs, scheduler states, and Slurm exit codes (code:signal); no scientific units.'
+        readonly = name not in ('submit_job', 'cancel_job', 'submit', 'cancel')
+        effects = ['Reads scheduler state or validates supplied data; does not submit jobs.']
+        if name in ('submit_job', 'submit'):
+            effects = ['Runs sbatch once; uncertain responses must be reconciled before resubmission.']
+        elif name in ('cancel_job', 'cancel'):
+            effects = ['Runs scancel for the specified job; request success is not confirmed cancellation.']
     elif module == 'py4siesta.post_process':
         category = 'post-processing'
         units = 'Energies: eV (reference depends on API); Cartesian distances: angstrom.'

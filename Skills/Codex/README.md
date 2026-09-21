@@ -33,8 +33,9 @@ in this directory.
 
 ## MCP prerequisites
 
-Follow the [Conda setup, Codex MCP registration, and connection check](../../README.MD#register-once-for-all-projects)
-for the complete setup sequence. Skill registration and MCP registration are separate steps.
+Prepare the shared environment in [Quick Start](../../README.MD#quick-start), then
+follow [Codex MCP registration and connection checks](../../README.MD#register-once-for-all-projects).
+Skill registration and MCP registration are separate steps.
 
 Calculation execution requires a connected, compatible py4siesta MCP server. Prepare
 Python 3.10+ with py4siesta and its MCP dependencies, configure the server in your

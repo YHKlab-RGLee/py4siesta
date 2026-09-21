@@ -55,17 +55,32 @@ git clone https://github.com/YHKlab-RGLee/py4siesta.git
 cd py4siesta
 ```
 
-Install the package:
+Prepare a Python environment for all interfaces. Reuse a compatible environment,
+or create a dedicated Conda environment:
 
 ```bash
-pip install .
+conda create -n py4siesta python=3.11 pip
+conda activate py4siesta
 ```
 
-For development, use editable install instead:
+Install from the repository root:
 
 ```bash
-pip install -e .
+python -m pip install . 'numpy==1.26.4'
 ```
+
+Use `-e` for an editable installation that follows changes in this checkout.
+For MCP tools and the Codex skill, replace `.` with `'.[mcp]'` in the installation
+command, for example:
+
+```bash
+python -m pip install -e '.[mcp]' 'numpy==1.26.4'
+python -m pip check
+```
+
+NumPy 1.26.4 is the tested compatibility version; NumPy 2.4.6 caused a structure
+rotation failure. SIESTA executables, utilities, and scheduler access are configured
+separately under [Configure SIESTA Paths](#configure-siesta-paths).
 
 Run the interactive numbered-menu interface:
 
@@ -86,7 +101,7 @@ The project has three program interfaces and an additional LLM assistant/skill m
 | `python py4siesta` | Interactive GUI/menu-based usage. | The user selects an existing numbered-menu workflow and supplies its inputs. | Available |
 | `py4siesta-tool <command> [options]` | Direct, deterministic CLI tools with JSON output. | The user or a script invokes specific operations with explicit arguments. | Available |
 | `py4siesta-agent "<request>"` | AI execution of predefined tasks requested in natural language. | Runs tools, checks results, and chooses the next step within the task's defined branches and stopping conditions. | Under development; initial DFT setup workflow available |
-| LLM assistant with the `py4siesta` skill | Composes and improves workflows for the user's goal using existing NanoCore and py4siesta-tool operations. | Uses menu workflows as initial examples, can create new combinations, and accumulates validated revisions in personal memory and workflow registries. AI composes existing operations; it does not implement core functionality. | Codex skill available; [separate registration required](#codex-skill-setup-and-usage) |
+| LLM assistant with the `py4siesta` skill | Solves calculation tasks through py4siesta MCP tools. | Free execution, registered workflow execution, or requested workflow registration/editing. | Codex skill available; [separate registration required](#codex-skill-setup-and-usage) |
 
 After installation, the equivalent entry points are `py4siesta`, `py4siesta-tool`, and `py4siesta-agent`.
 
@@ -102,7 +117,8 @@ Core runtime dependencies are declared in `pyproject.toml`:
 The repository also installs the bundled `nanocore` package.
 
 Agent frameworks, model-provider integrations, and the Materials Project
-client are optional extras. The agent workflow requires Python 3.10 or newer.
+client and MCP support are optional extras. MCP and the agent workflow require
+Python 3.10 or newer.
 C2DB monolayer structures use its public OPTIMADE endpoint and require no
 additional Python package.
 
@@ -286,6 +302,23 @@ py4siesta-tool planeaverage-grid --file-path Device.VH --target vh --axis z
 
 For `py4siesta-tool pdos`, pass one or more `--orbital` selections in `atom_or_species[_n[_l[_m]]]` format, for example `Mg_0`, `O_0`, or `C_2_1_0`. Multiple selections may be space-separated, comma-separated, or provided with repeated `--orbital` options.
 
+For explicit Slurm jobs, use any script filename; `origin/` is not required:
+
+```bash
+py4siesta-tool job-submit --case /work/case01 --script run.slurm
+py4siesta-tool job-status --job-id 12345
+py4siesta-tool job-cancel --job-id 12345
+```
+
+Relative script paths resolve inside `--case`. Submission returns the job ID and
+optional cluster name; pass `--cluster NAME` to status/cancel if returned. Status
+reports the Slurm state and accounting exit code; cancellation reports a request,
+not confirmed termination. Array task IDs such as `12345_2` are accepted, but array
+parent status is not aggregated. Missing records are `unknown`; query errors and
+uncertain submissions return errors with details. Never blindly retry submission.
+These commands reuse your configured Slurm environment and do not edit scripts.
+Existing `submit --mode ...` behavior is unchanged.
+
 Run `py4siesta-tool --help` or `py4siesta-tool <command> --help` for the full command list and required inputs.
 
 `py4siesta-tool` is a deterministic CLI, not an AI agent. It performs only the command and options explicitly supplied by the caller.
@@ -293,10 +326,10 @@ Run `py4siesta-tool --help` or `py4siesta-tool <command> --help` for the full co
 ## MCP Tools
 
 An optional MCP stdio server exposes existing NanoCore and py4siesta APIs with
-searchable descriptions, input schemas, units and side effects. Use Python 3.10+:
+searchable descriptions, input schemas, units and side effects. Install the `mcp`
+extra as described in [Quick Start](#quick-start), then launch the server with:
 
 ```bash
-python -m pip install '.[mcp]'
 python -m py4siesta_mcp --workdir /absolute/calculation/directory
 ```
 
@@ -310,38 +343,22 @@ object handles, output conventions and examples.
 
 ## Codex Skill: Setup and Usage
 
-The bundled [py4siesta skill](Skills/Codex/py4siesta/SKILL.md) uses connected
-py4siesta MCP tools to prepare, run, and analyze calculation cases, or register/edit
-reusable workflows. It supports free and registered-workflow execution; numbered
-menus are optional references. The skill is separate from `py4siesta-agent` and does
-not require its optional agent-framework dependencies.
+The [py4siesta skill](Skills/Codex/py4siesta/SKILL.md) lets Codex solve calculation
+tasks through MCP and manage reusable workflows. It is separate from
+`py4siesta-agent` and does not require agent-framework dependencies.
 
 ### Register once for all projects
 
-Prepare the Python environment, register the MCP server, and register the skill.
-These are separate steps. Run the following commands in your terminal (Linux/macOS).
-The skill itself does not install packages, change environments or MCP settings,
-or fall back to CLI/direct Python when MCP is unavailable.
+Complete [Quick Start](#quick-start) with the `mcp` extra first. The following steps
+connect that existing environment to Codex; the skill does not install or repair it.
 
-**1. Prepare a Python environment.** A dedicated Conda environment is recommended;
-reuse a compatible environment if you already have one. For a new environment:
+**1. Register the MCP server.** In the prepared environment, find the Python path:
 
 ```bash
-conda create -n py4siesta python=3.11 pip
-conda activate py4siesta
-cd /absolute/path/to/py4siesta
-python -m pip install -e '.[mcp]' 'numpy==1.26.4'
-python -m pip check
 python -c "import sys; print(sys.executable)"
 ```
 
-NumPy 1.26.4 is used here because a structure-rotation compatibility failure was
-observed with NumPy 2.4.6. This installs the current checkout in editable mode;
-keep it at that path. SIESTA, external post-processing utilities, and scheduler
-access must be provided separately for tasks that need them.
-
-**2. Register the MCP server with Codex.** Use the absolute Python path printed
-above and an existing calculation directory; replace both example paths below:
+Use that absolute path and an existing calculation directory:
 
 ```bash
 codex mcp add py4siesta -- \
@@ -350,98 +367,60 @@ codex mcp add py4siesta -- \
 codex mcp list
 ```
 
-If `py4siesta` is already registered, check its command and update that entry to use
-the intended Python and workdir. The absolute interpreter path means you do not
-need to activate Conda every time Codex starts. `--workdir` is the server's default;
-provide the actual calculation directory in each task. See the
-[official Codex MCP documentation](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+If already registered, update the existing entry to the intended Python and workdir.
+The absolute Python path avoids needing to activate Conda whenever Codex starts.
+See the [official MCP guide](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
-**3. Register the skill.** From the repository root:
+**2. Register the skill.** From the repository root:
 
 ```bash
 bash Skills/Codex/register.sh --dry-run
 bash Skills/Codex/register.sh
 ```
 
-The registration script links `~/.agents/skills/py4siesta` to this checkout, creates
-the external personal state directory, and adds that path to Codex's writable roots.
-It retains existing settings, backs up changed configuration, and does not replace
-an existing skill at another location. It does not install or register the MCP server.
-See [skill registration details](Skills/Codex/README.md) for custom state paths and
-managed filesystem permissions.
+This links the skill to the checkout and configures its external personal state
+location. Keep the checkout in place. See [registration details](Skills/Codex/README.md)
+for custom paths and permissions.
 
-**4. Restart Codex and verify the connection.** Check `/mcp` for the server and
-`/skills` for the skill. Then ask:
+**3. Restart Codex and verify.** Check `/mcp` and `/skills`, then ask:
 
 ```text
-Use the py4siesta MCP to read py4siesta://runtime and search
-py4siesta_api_catalog for read_xyz. Report the Python path and available tools.
-Do not generate files or submit calculations.
+Use py4siesta MCP to read py4siesta://runtime and search
+py4siesta_api_catalog for read_xyz. Report the Python path and tools.
 ```
 
-`codex mcp list` confirms registration; a successful MCP resource read and tool call
-confirm the connection. `python -m py4siesta_mcp --catalog` only checks local catalog
-generation. If connection fails, check the configured Python, existing workdir,
-server errors, and client permissions before starting a calculation. Passing a
-standalone MCP test does not establish that the Codex connection works.
+A successful resource read and tool call confirm the connection. Registration or
+local `--catalog` output alone does not. If connection fails, check the configured
+Python, workdir, server errors, and client permissions.
 
 ### Give Codex a calculation task
 
-Invoke `$py4siesta` explicitly and supply the absolute calculation directory, inputs,
-and desired scope. Generation workflows usually require `origin/input/STRUCT.fdf`
-and matching calculation inputs; post-processing uses the relevant output files.
+Invoke `$py4siesta` explicitly with the calculation directory, inputs, and scope.
+Generation usually needs `origin/input/STRUCT.fdf` and matching calculation inputs;
+post-processing uses the relevant output files.
 
-| Mode | Behavior |
+| Mode | Example request |
 | --- | --- |
-| Free | Discover and compose MCP tools for the user's goal. |
-| Workflow execution | Follow a registered procedure and its allowed branches. |
-| Workflow registration/editing | Create or revise a reusable procedure when requested. |
+| Free | `$py4siesta In free mode, prepare bulk k-point grids 2, 4, 6 in /work/diamond. Do not submit.` |
+| Workflow execution | `$py4siesta Run my validated k-point analysis workflow in /work/diamond with a 0.01 eV tolerance.` |
+| Workflow registration/editing | `$py4siesta Register the procedure we just executed as a personal workflow with validation evidence.` |
 
-An explicit mode takes precedence. Otherwise a clearly matching compatible validated
-workflow is selected; other calculation requests use free mode. The skill announces
-its mode. The five bundled [MCP workflow examples](Skills/Codex/py4siesta/workflows/)
-cover k-points, geometry scans/fitting, geometry utilities, submission, and
-post-processing. They remain drafts pending workflow execution validation; they
-are not automatically selected as validated procedures.
-
-Example prompts (replace paths and scientific parameters with your own):
-
-```text
-$py4siesta In free mode, prepare bulk k-point cases in /work/diamond
-for grids 2, 4, and 6. Check generated inputs; do not submit jobs.
-
-$py4siesta Run my validated k-point analysis workflow in /work/diamond,
-using a 0.01 eV tolerance. Report missing or unconverged calculations.
-
-$py4siesta Register the procedure we just executed as a personal workflow,
-including its MCP tools, inputs, steps, and validation evidence.
-
-$py4siesta Resume my previous task in /work/diamond. Inspect existing
-outputs and submission status before continuing; do not resubmit blindly.
-```
-
-Case generation can recreate existing output directories; job submission must be
-part of your request. A generated structure or submitted job is not yet a completed,
-converged SIESTA calculation. Missing MCP tools or environment prerequisites stop
-the dependent work. Workflow drafting can proceed offline as unverified.
+Without an explicit mode, the skill uses a clearly matching validated workflow or
+free mode. The five bundled [workflow examples](Skills/Codex/py4siesta/workflows/)
+are drafts pending execution validation. Registration alone does not run calculations.
+Submission and overwriting existing results must be within the requested scope;
+prepared inputs or submitted jobs are not completed calculations.
 
 ### Personal history and reusable workflows
 
-Personal workflows, memory, and necessary history stay outside this repository,
+Personal workflows and necessary memory/history are stored outside the repository,
 by default in `~/.local/state/py4siesta-skill`. Set `PY4SIESTA_SKILL_STATE` before
-registration and keep it set when starting Codex to use another external location.
+registration and when starting Codex to choose another external location.
 
-Workflow registration/editing occurs only when requested and defaults to personal
-storage. Request public/repository registration explicitly to add a distributable
-workflow. New or unverified procedures remain drafts; meaningful revisions preserve
-prior versions and evidence. Registration alone does not authorize calculations.
-
-The skill saves only useful preferences, verified environment facts, nonduplicate
-observations, and history needed for resumption, uncertain submissions, investigation,
-validation, or requested auditing. Existing logs are referenced rather than copied;
-unchanged repeats create no new record. Saved records are read back, and unavailable
-persistence is reported. Current instructions override memory. No background learning
-or monitoring continues after the session ends.
+Workflows are registered or revised only when requested; public registration must
+be explicit. Unchanged success creates no new record. The skill retains useful
+facts and necessary resume evidence, reports persistence failures, and performs
+no background learning or monitoring. See [state details](Skills/Codex/README.md#selective-memory).
 
 ## AI-Agent Interface
 

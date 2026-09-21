@@ -47,6 +47,8 @@ def parameter_schema(parameter):
         try:
             json.dumps(default, allow_nan=False)
             schema['default'] = default
+            if default is None and 'type' in schema:
+                schema['type'] = [schema['type'], 'null']
         except (TypeError, ValueError):
             pass
     # Defaults are not type restrictions: nanocore commonly accepts multiple types.
@@ -239,13 +241,19 @@ class Catalog:
             api = 'py4siesta-tool.' + name
             self.entries.append(dict(
                 api=api, tool=tool_name(api), module='py4siesta.tool_cli', owner='', member=name,
-                kind='cli', available=True, reason=None, category='submission' if name == 'submit' else 'cli-tools',
+                kind='cli', available=True, reason=None, category='submission' if name in ('submit', 'job-submit', 'job-status', 'job-cancel') else 'cli-tools',
                 purpose=next((a.help for a in subparsers._choices_actions if a.dest == name), name),
                 documentation=command.format_help(), signature=command.format_usage().strip(),
-                units='Geometry/displacements: angstrom; energy windows: eV; ratios and counts: dimensionless.',
+                units=('Job IDs, scheduler states, and Slurm exit codes (code:signal); no scientific units.'
+                       if name in ('job-submit', 'job-status', 'job-cancel') else
+                       'Geometry/displacements: angstrom; energy windows: eV; ratios and counts: dimensionless.'),
                 returns='Existing tool_cli envelope: ok, command, result or error. Generated paths follow workdir.',
-                side_effects=['May write/overwrite calculation files; submit runs sbatch and must not be blindly retried.'],
-                read_only=False, actions=actions,
+                side_effects=([{'job-submit': 'Runs sbatch once; preserve job IDs and uncertain submission evidence.',
+                                'job-status': 'Queries scheduler state only; never submits jobs.',
+                                'job-cancel': 'Requests cancellation of the specified Slurm job.'}[name]]
+                              if name in ('job-submit', 'job-status', 'job-cancel') else
+                              ['May write/overwrite calculation files; submit runs sbatch and must not be blindly retried.']),
+                read_only=name == 'job-status', actions=actions,
                 input_schema={'type': 'object', 'properties': {
                     'parameters': {'type': 'object', 'properties': properties, 'required': required, 'additionalProperties': False},
                     'workdir': {'type': 'string', 'description': 'Existing calculation root, containing origin/ where required.'}},

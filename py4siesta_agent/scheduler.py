@@ -1,105 +1,11 @@
-"""Deterministic scheduler operations and agent workflow resource accounting."""
+"""Agent workflow resource accounting over shared Slurm operations."""
 
 import os
-import re
-import subprocess
 from datetime import datetime, timezone
-from pathlib import Path
 
-
-class SchedulerError(RuntimeError):
-    pass
-
-
-class SlurmBackend:
-    name = "slurm"
-
-    def submit(self, case_directory, script_path):
-        result = subprocess.run(
-            ["sbatch", str(script_path)],
-            cwd=str(case_directory),
-            check=True,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        match = re.search(r"Submitted batch job\s+(\d+)", result.stdout)
-        if not match:
-            raise SchedulerError("Could not parse a Slurm job ID from sbatch output.")
-        return match.group(1)
-
-    def status(self, job_id):
-        result = subprocess.run(
-            ["squeue", "-h", "-j", str(job_id), "-o", "%T"],
-            check=True,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        state = result.stdout.strip().splitlines()
-        if not state:
-            result = subprocess.run(
-                ["sacct", "-n", "-X", "-j", str(job_id), "--format=State"],
-                check=True,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            state = result.stdout.strip().splitlines()
-        return self.normalize_status(state[0] if state else "UNKNOWN")
-
-    def cancel(self, job_id):
-        subprocess.run(["scancel", str(job_id)], check=True)
-
-    @staticmethod
-    def normalize_status(value):
-        state = value.strip().upper().split()[0].split("+")[0]
-        if state in {"PENDING", "CONFIGURING", "REQUEUED"}:
-            return "queued"
-        if state in {"RUNNING", "COMPLETING"}:
-            return "running"
-        if state == "COMPLETED":
-            return "completed"
-        if state in {"CANCELLED", "PREEMPTED"}:
-            return "cancelled"
-        return "failed"
-
-
-def parse_requested_nodes(text, script_path="<scheduler script>"):
-    patterns = [
-        r"^\s*#SBATCH\s+--nodes(?:=|\s+)(\d+)\s*(?:#.*)?$",
-        r"^\s*#SBATCH\s+-N(?:=|\s+)(\d+)\s*(?:#.*)?$",
-    ]
-    for line in text.splitlines():
-        for pattern in patterns:
-            match = re.match(pattern, line)
-            if match:
-                value = int(match.group(1))
-                if value > 0:
-                    return value
-    raise SchedulerError(
-        "Cannot parse requested nodes from %s; add '#SBATCH --nodes=<count>'."
-        % script_path
-    )
-
-
-def validate_scheduler_script(script_path, backend):
-    path = Path(script_path).expanduser().resolve()
-    if not path.is_file():
-        raise FileNotFoundError("Scheduler script does not exist: %s" % path)
-    if not os.access(str(path), os.R_OK):
-        raise SchedulerError("Scheduler script is not readable: %s" % path)
-    text = path.read_text()
-    if backend.name == "slurm" and "#SBATCH" not in text:
-        raise SchedulerError(
-            "Scheduler script %s is incompatible with the configured Slurm backend."
-            % path
-        )
-    return {
-        "path": str(path),
-        "requested_nodes": parse_requested_nodes(text, path),
-        "backend": backend.name,
-    }
+from py4siesta.scheduler import (
+    SchedulerError, SlurmBackend, parse_requested_nodes, validate_scheduler_script,
+)
 
 
 TERMINAL_STATES = {"completed", "failed", "cancelled"}
@@ -159,12 +65,11 @@ class SchedulerManager:
                 continue
             try:
                 job["status"] = self.backend.status(job["scheduler_job_id"])
+                job.pop("query_error", None)
                 if job["status"] in TERMINAL_STATES:
                     job["completed_at"] = datetime.now(timezone.utc).isoformat()
             except Exception as exc:
-                job["status"] = "failed"
-                job["completed_at"] = datetime.now(timezone.utc).isoformat()
-                job["failure"] = "Scheduler status query failed: %s" % exc
+                job["query_error"] = "Scheduler status query failed: %s" % exc
         return self.submit_pending(jobs)
 
     def cancel(self, jobs, job_id):

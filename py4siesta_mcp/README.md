@@ -47,7 +47,7 @@ discovery filter, not a security sandbox.
 | `case-workflows` | Calculation contexts, k-point/EOS/distance/interpolation preparation and analysis |
 | `post-processing` | Band, PDOS, PLDOS and planar averages, including numerical and figure outputs |
 | `cli-tools` | Existing deterministic `py4siesta-tool` commands and `execute()` |
-| `submission` | Existing Slurm submission APIs |
+| `submission` | Slurm submission, explicit job status, and cancellation APIs |
 | `execution` | Existing `Siesta.run()` |
 | `visualization` | Existing XCrySDen helpers |
 | `utilities` | Element lookup, file-copy and other public helpers |
@@ -57,6 +57,10 @@ details are not separate tools. Public inherited project methods are included.
 Useful operators are named `operator_getitem`, `operator_multiply`, etc.
 Interactive entry points, abstract hooks, context-manager-only operations and
 unimportable legacy modules are recorded but not callable tools.
+Scheduler exception types and compatibility adapters are also inventory-only.
+For workflows, prefer `py4siesta_tool_job_submit`, `py4siesta_tool_job_status`,
+and `py4siesta_tool_job_cancel`; their underlying public functions remain available
+for direct compositions.
 
 ## Inputs and outputs
 
@@ -117,6 +121,27 @@ are interpreted relative to the returned `workdir` unless absolute.
 Atom serials are ordinarily one-based; `operator_getitem` is zero-based.
 Connectivity distances are in angstrom, and image shifts are integer lattice
 translations. PBC is supplied by the user, never inferred by the MCP layer.
+
+## Explicit Slurm jobs
+
+- `py4siesta_tool_job_submit`: `parameters: {"case":"/work/case01","script":"run.slurm"}`
+- `py4siesta_tool_job_status`: `parameters: {"job_id":"12345"}`
+- `py4siesta_tool_job_cancel`: `parameters: {"job_id":"12345"}`
+
+These CLI-backed tools return the usual nested CLI result envelope. Direct public
+APIs `py4siesta_scheduler_submit_job`, `py4siesta_scheduler_job_status`, and
+`py4siesta_scheduler_cancel_job` call the same implementation; discover their schemas
+in the catalog. Neither origin nor a `slm_` filename is required. Relative scripts
+resolve against the explicit case directory. Use the returned cluster in subsequent
+status/cancel calls when present. Calls use the server's Slurm environment.
+
+Status queries are read-only and return raw state, normalized state, and an accounting
+exit code when available. Missing/ambiguous records stay unknown; query errors are
+not evidence of job failure. Cancellation success means requested, not confirmed.
+Submission errors preserve paths, stdout/stderr, and uncertainty in error details;
+reconcile before resubmission. Calls time out after 30 seconds. Individual array
+tasks are supported, but parent arrays are not aggregated. No background monitoring
+or automatic retry is added; SIESTA output validation remains a separate step.
 
 ## Existing behavior and limitations
 

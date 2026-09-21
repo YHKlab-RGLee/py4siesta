@@ -1,7 +1,6 @@
 import json
 import operator
 import shutil
-import subprocess
 from pathlib import Path
 
 import matplotlib.pylab as plt
@@ -12,6 +11,7 @@ from nanocore import *
 from nanocore.io import write_xyz
 
 from .utils import copy_contents, last_matching_line, working_dir
+from .scheduler import _submit_script
 
 
 def initialize_origin(structure, xc, kpoints, slurm, root="."):
@@ -858,7 +858,7 @@ class JobSubmissionOperation:
                     continue
                 with working_dir(subdir):
                     for script in sorted(Path.cwd().glob("slm_*")):
-                        subprocess.run(["sbatch", str(script)], check=True)
+                        _submit_script(script)
 
 
 class MoveStructureOperation:

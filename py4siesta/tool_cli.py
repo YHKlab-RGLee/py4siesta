@@ -10,6 +10,7 @@ import numpy as np
 from nanocore import siesta
 
 from .operations import SiestaWorkflow, initialize_origin, prepare_sliding_cases
+from .scheduler import SchedulerError, submit_job, job_status, cancel_job
 from .post_process import process_band, process_pdos, process_pldos, process_planeaverage_grid
 
 
@@ -57,7 +58,7 @@ def _success(command, result=None):
 
 
 def _failure(command, exc):
-    return {
+    payload = {
         "ok": False,
         "command": command,
         "error": {
@@ -65,6 +66,9 @@ def _failure(command, exc):
             "message": str(exc),
         },
     }
+    if isinstance(exc, SchedulerError) and exc.details:
+        payload["error"]["details"] = exc.details
+    return payload
 
 
 def _workflow():
@@ -154,6 +158,18 @@ def _cmd_fit_structure(args):
 def _cmd_submit(args):
     _workflow().qsub(args.mode)
     return {"mode": args.mode}
+
+
+def _cmd_job_submit(args):
+    return submit_job(args.case, args.script)
+
+
+def _cmd_job_status(args):
+    return job_status(args.job_id, cluster=args.cluster)
+
+
+def _cmd_job_cancel(args):
+    return cancel_job(args.job_id, cluster=args.cluster)
 
 
 def _cmd_band(args):
@@ -298,6 +314,20 @@ def build_parser():
     command = subparsers.add_parser("submit", help="Submit generated jobs with sbatch.")
     command.add_argument("--mode", choices=["kpt", "opt", "geometry"], required=True)
     command.set_defaults(func=_cmd_submit)
+
+    command = subparsers.add_parser("job-submit", help="Submit one explicit Slurm script and return its job ID.")
+    command.add_argument("--case", required=True, help="Existing calculation directory; no origin required.")
+    command.add_argument("--script", required=True, help="Script path, absolute or relative to --case; any filename.")
+    command.set_defaults(func=_cmd_job_submit)
+
+    for name, handler, purpose in (
+        ("job-status", _cmd_job_status, "Query Slurm job state and accounting exit code without submitting."),
+        ("job-cancel", _cmd_job_cancel, "Request cancellation of a Slurm job."),
+    ):
+        command = subparsers.add_parser(name, help=purpose)
+        command.add_argument("--job-id", required=True, help="Positive job ID or array task ID (123_4).")
+        command.add_argument("--cluster", help="Single cluster name returned by submission, if present.")
+        command.set_defaults(func=handler)
 
     command = subparsers.add_parser("band", help="Plot a SIESTA band structure.")
     command.add_argument("--bands-path")

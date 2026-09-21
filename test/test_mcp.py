@@ -67,6 +67,22 @@ class McpCatalogTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             runtime.invoke('unregistered_function', {})
 
+    def test_scheduler_exposure_and_nullable_cluster(self):
+        from jsonschema import validate
+        for api in ('SchedulerError', 'SlurmBackend', 'SlurmBackend.submit',
+                    'SlurmBackend.status', 'SlurmBackend.cancel',
+                    'SlurmBackend.normalize_status', 'validate_scheduler_script'):
+            name = 'py4siesta.scheduler.' + api
+            entry = next(e for e in self.catalog.entries if e['api'] == name)
+            self.assertFalse(entry['available'])
+            self.assertTrue(entry['reason'])
+            self.assertNotIn(entry['tool'], self.catalog.tools)
+        for name in ('job_status', 'cancel_job'):
+            schema = self.catalog.tools['py4siesta_scheduler_' + name]['input_schema']
+            for params in ({'job_id': '123'}, {'job_id': '123', 'cluster': None},
+                           {'job_id': '123', 'cluster': 'example'}):
+                validate({'parameters': params}, schema)
+
     def test_arrays_attributes_and_released_handles(self):
         runtime = Runtime(self.catalog, Path.cwd())
         values = np.arange(5000.)
@@ -105,6 +121,27 @@ class McpProtocolTests(unittest.TestCase):
             root = Path(directory)
             (root / 'molecule.xyz').write_text('2\nCH\nC 0 0 0\nH 1 0 0\n')
             (root / 'stdout.txt').write_text('siesta:         Total = -12.5\n')
+            # All scheduler commands in this test are local fakes, never cluster jobs.
+            fakebin = root / 'bin'
+            fakebin.mkdir()
+            fake_source = ("#!" + sys.executable + "\n"
+                "import sys,json\nfrom pathlib import Path\n"
+                "name=Path(sys.argv[0]).name\n"
+                "if name=='sbatch':\n"
+                " Path('submission.json').write_text(json.dumps(sys.argv[1:]))\n"
+                " print('unrecognized' if 'ambiguous.sh' in sys.argv[-1] else '7001')\n"
+                "elif name=='squeue':\n"
+                " job=sys.argv[sys.argv.index('-j')+1]\n"
+                " if job=='7001': print('7001|RUNNING')\n"
+                "elif name=='sacct': print('7002|COMPLETED|0:0')\n"
+                "elif name=='scancel': Path('cancelled.json').write_text(json.dumps(sys.argv[1:]))\n")
+            for name in ('sbatch', 'squeue', 'sacct', 'scancel'):
+                executable = fakebin / name
+                executable.write_text(fake_source)
+                executable.chmod(0o755)
+            environment['PATH'] = str(fakebin) + os.pathsep + environment.get('PATH', '')
+            (root / 'run.sh').write_text('#!/bin/sh\ntrue\n')
+            (root / 'ambiguous.sh').write_text('#!/bin/sh\ntrue\n')
             parameters = StdioServerParameters(command=sys.executable,
                 args=['-m', 'py4siesta_mcp', '--workdir', directory],
                 cwd=str(repository), env=environment)
@@ -127,6 +164,29 @@ class McpProtocolTests(unittest.TestCase):
                         result = await client.call_tool(tool, arguments)
                         self.assertFalse(result.isError, result.content)
                         return result.structuredContent
+
+                    for name in ('job_submit', 'job_status', 'job_cancel'):
+                        self.assertIn('py4siesta_tool_' + name, names)
+                    status_tool = next(t for t in listed.tools if t.name == 'py4siesta_tool_job_status')
+                    self.assertTrue(status_tool.annotations.readOnlyHint)
+                    submit_tool = next(t for t in listed.tools if t.name == 'py4siesta_tool_job_submit')
+                    self.assertFalse(submit_tool.annotations.readOnlyHint)
+                    submitted = await call('py4siesta_tool_job_submit', {'parameters': {
+                        'case': directory, 'script': 'run.sh'}})
+                    self.assertEqual(submitted['result']['result']['job_id'], '7001')
+                    self.assertFalse((root / 'origin').exists())
+                    active = await call('py4siesta_tool_job_status', {'parameters': {'job_id': '7001'}})
+                    self.assertEqual(active['result']['result']['status'], 'running')
+                    complete = await call('py4siesta_scheduler_job_status', {'parameters': {'job_id': '7002', 'cluster': None}})
+                    self.assertEqual(complete['result']['exit_code'], '0:0')
+                    cancelled = await call('py4siesta_tool_job_cancel', {'parameters': {'job_id': '7001'}})
+                    self.assertEqual(cancelled['result']['result']['status'], 'cancel_requested')
+                    self.assertEqual(json.loads((root / 'cancelled.json').read_text()), ['7001'])
+                    unknown = await client.call_tool('py4siesta_scheduler_submit_job', {'parameters': {
+                        'case_directory': directory, 'script_path': 'ambiguous.sh'}})
+                    self.assertTrue(unknown.isError)
+                    self.assertEqual(unknown.structuredContent['error']['details']['status'], 'submission_unknown')
+                    self.assertFalse(unknown.structuredContent['error']['details']['retry_safe'])
 
                     loaded = await call('nanocore_io_read_xyz', {'parameters': {'file_name': 'molecule.xyz'}})
                     atoms = loaded['result']['$object']

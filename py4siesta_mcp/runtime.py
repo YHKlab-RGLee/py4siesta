@@ -185,6 +185,9 @@ def worker_main(connection, catalog, workdir):
                 result = dict(ok=not failed, tool=tool, result=value, workdir=str(target.resolve()))
             except (Exception, SystemExit) as exc:
                 result = dict(ok=False, tool=tool, error=dict(type=type(exc).__name__, message=str(exc)))
+                from py4siesta.scheduler import SchedulerError
+                if isinstance(exc, SchedulerError) and exc.details:
+                    result['error']['details'] = exc.details
             finally:
                 os.chdir(previous)
             sys.stdout.flush(); sys.stderr.flush()
