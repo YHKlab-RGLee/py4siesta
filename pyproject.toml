@@ -15,6 +15,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+mcp = ["mcp>=1.30,<2"]
 agent = [
   "langchain>=1.0,<2",
   "langgraph>=1.0,<2",
@@ -48,9 +49,10 @@ materials-project = ["mp-api>=0.45"]
 py4siesta = "py4siesta.cli:main"
 py4siesta-tool = "py4siesta.tool_cli:main"
 py4siesta-agent = "py4siesta_agent.cli:main"
+py4siesta-mcp = "py4siesta_mcp.server:main"
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["py4siesta", "py4siesta_agent*", "NanoCore", "NanoCore.utils"]
+include = ["py4siesta", "py4siesta_agent*", "py4siesta_mcp*", "nanocore", "nanocore.utils"]

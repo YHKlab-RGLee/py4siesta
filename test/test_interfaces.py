@@ -93,7 +93,7 @@ class InterfaceBoundaryTests(unittest.TestCase):
     def test_core_packages_do_not_import_agent_or_agent_frameworks(self):
         repository = Path(__file__).resolve().parent.parent
         forbidden = ("py4siesta_agent", "langchain", "langgraph")
-        for package in ("NanoCore", "py4siesta"):
+        for package in ("nanocore", "py4siesta"):
             for path in (repository / package).glob("*.py"):
                 text = path.read_text()
                 for token in forbidden:

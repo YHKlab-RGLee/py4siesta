@@ -17,6 +17,7 @@
   - [Utility](#utility)
 - [Running Modes](#running-modes)
 - [Direct JSON Tools](#direct-json-tools)
+- [MCP Tools](#mcp-tools)
 - [Codex Skill: Setup and Usage](#codex-skill-setup-and-usage)
 - [AI-Agent Interface](#ai-agent-interface)
   - [Install Agent Support](#install-agent-support)
@@ -38,8 +39,12 @@ workflow:
 This project includes the bundled `NanoCore` code developed by Dr. Hu Sung Kim, KISTI, and related original work from **OORINano / YHKLab**.
 
 - Keep the original attribution and copyright context for `NanoCore` and OORINano.
-- The local bundled `NanoCore/` package is used directly from this repository.
+- The local bundled `nanocore/` package is used directly from this repository.
 - You do not need to download `NanoCore` from an external source.
+
+The bundled Python package is named `nanocore`: use `import nanocore`
+(previously `import NanoCore`). After updating an existing checkout, rerun
+`python -m pip install -e .` to refresh the installed package names.
 
 ## Quick Start
 
@@ -94,7 +99,7 @@ Core runtime dependencies are declared in `pyproject.toml`:
 - `scipy`
 - `matplotlib`
 
-The repository also installs the bundled `NanoCore` package.
+The repository also installs the bundled `nanocore` package.
 
 Agent frameworks, model-provider integrations, and the Materials Project
 client are optional extras. The agent workflow requires Python 3.10 or newer.
@@ -103,7 +108,7 @@ additional Python package.
 
 ## Configure SIESTA Paths
 
-The bundled `NanoCore` module reads local executable paths from `NanoCore/env.py`. Update this file before using features that call SIESTA utilities.
+The bundled `NanoCore` module reads local executable paths from `nanocore/env.py`. Update this file before using features that call SIESTA utilities.
 
 Common values to edit:
 
@@ -134,7 +139,7 @@ py4siesta-tool init \
 ```
 
 The command obtains the required pseudopotentials from the database configured
-by `siesta_psf_location` in `NanoCore/env.py`. It refuses to overwrite an
+by `siesta_psf_location` in `nanocore/env.py`. It refuses to overwrite an
 existing `origin/` directory.
 
 Expected layout:
@@ -285,91 +290,158 @@ Run `py4siesta-tool --help` or `py4siesta-tool <command> --help` for the full co
 
 `py4siesta-tool` is a deterministic CLI, not an AI agent. It performs only the command and options explicitly supplied by the caller.
 
+## MCP Tools
+
+An optional MCP stdio server exposes existing NanoCore and py4siesta APIs with
+searchable descriptions, input schemas, units and side effects. Use Python 3.10+:
+
+```bash
+python -m pip install '.[mcp]'
+python -m py4siesta_mcp --workdir /absolute/calculation/directory
+```
+
+Configure this command in your MCP client. `py4siesta_api_catalog` searches the
+API inventory; `python -m py4siesta_mcp --catalog` exports it as JSON. The server
+can read structures, manipulate session objects, generate files, analyze outputs
+and invoke existing submission APIs when called. Legacy APIs that cannot be
+exposed are listed with reasons. Existing menu and direct CLI usage remain available.
+See [MCP usage and API categories](py4siesta_mcp/README.md) for arguments,
+object handles, output conventions and examples.
+
 ## Codex Skill: Setup and Usage
 
-The bundled [py4siesta skill](Skills/Codex/py4siesta/SKILL.md) lets Codex use the
-existing menus through `py4siesta-tool`. It covers k-point sampling/analysis (1–3),
-geometry optimization (4–8), submission (9–10), post-processing (11–13), and geometry
-utilities (01 → 1/2). It adds instructions and record templates, not a new CLI menu
-or a background service. Your existing calculation workflow stays the same.
-This skill runs inside Codex and is separate from the `py4siesta-agent` interface
-described below; using the skill with deterministic tools does not require the
-optional agent-framework dependencies.
+The bundled [py4siesta skill](Skills/Codex/py4siesta/SKILL.md) uses connected
+py4siesta MCP tools to prepare, run, and analyze calculation cases, or register/edit
+reusable workflows. It supports free and registered-workflow execution; numbered
+menus are optional references. The skill is separate from `py4siesta-agent` and does
+not require its optional agent-framework dependencies.
 
 ### Register once for all projects
 
-First install py4siesta in the Python environment you use for calculations (see
-Quick Start), then confirm `py4siesta-tool --help` works. Registering a skill does
-not install py4siesta, SIESTA, or its external utilities.
+Prepare the Python environment, register the MCP server, and register the skill.
+These are separate steps. Run the following commands in your terminal (Linux/macOS).
+The skill itself does not install packages, change environments or MCP settings,
+or fall back to CLI/direct Python when MCP is unavailable.
 
-From this repository's root, link the complete skill directory into Codex's user
-skill directory (Linux/macOS):
+**1. Prepare a Python environment.** A dedicated Conda environment is recommended;
+reuse a compatible environment if you already have one. For a new environment:
 
 ```bash
-mkdir -p "$HOME/.agents/skills"
-# Run only if ~/.agents/skills/py4siesta does not already exist.
-ln -s "$PWD/Skills/Codex/py4siesta" "$HOME/.agents/skills/py4siesta"
+conda create -n py4siesta python=3.11 pip
+conda activate py4siesta
+cd /absolute/path/to/py4siesta
+python -m pip install -e '.[mcp]' 'numpy==1.26.4'
+python -m pip check
+python -c "import sys; print(sys.executable)"
 ```
 
-If you prefer a standalone copy, use `cp -R Skills/Codex/py4siesta
-"$HOME/.agents/skills/py4siesta"` instead, also with an unused destination. Copy the
-whole directory, not just SKILL.md. A link follows checkout updates and requires
-keeping the checkout at that path; a copy must be updated separately. Preserve any
-existing installation before replacing it.
+NumPy 1.26.4 is used here because a structure-rotation compatibility failure was
+observed with NumPy 2.4.6. This installs the current checkout in editable mode;
+keep it at that path. SIESTA, external post-processing utilities, and scheduler
+access must be provided separately for tasks that need them.
 
-In Codex, use `/skills` to check for `py4siesta`, then invoke it as `$py4siesta`.
-If it does not appear, restart Codex. These locations and invocation methods follow
-the [official Codex skill documentation](https://learn.chatgpt.com/docs/build-skills).
-You can also ask Codex to register the local directory for you. `$skill-creator`
-is useful for adapting the skill; you do not need to recreate it to register it.
+**2. Register the MCP server with Codex.** Use the absolute Python path printed
+above and an existing calculation directory; replace both example paths below:
+
+```bash
+codex mcp add py4siesta -- \
+  /absolute/path/to/envs/py4siesta/bin/python \
+  -m py4siesta_mcp --workdir /absolute/calculation/directory
+codex mcp list
+```
+
+If `py4siesta` is already registered, check its command and update that entry to use
+the intended Python and workdir. The absolute interpreter path means you do not
+need to activate Conda every time Codex starts. `--workdir` is the server's default;
+provide the actual calculation directory in each task. See the
+[official Codex MCP documentation](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+
+**3. Register the skill.** From the repository root:
+
+```bash
+bash Skills/Codex/register.sh --dry-run
+bash Skills/Codex/register.sh
+```
+
+The registration script links `~/.agents/skills/py4siesta` to this checkout, creates
+the external personal state directory, and adds that path to Codex's writable roots.
+It retains existing settings, backs up changed configuration, and does not replace
+an existing skill at another location. It does not install or register the MCP server.
+See [skill registration details](Skills/Codex/README.md) for custom state paths and
+managed filesystem permissions.
+
+**4. Restart Codex and verify the connection.** Check `/mcp` for the server and
+`/skills` for the skill. Then ask:
+
+```text
+Use the py4siesta MCP to read py4siesta://runtime and search
+py4siesta_api_catalog for read_xyz. Report the Python path and available tools.
+Do not generate files or submit calculations.
+```
+
+`codex mcp list` confirms registration; a successful MCP resource read and tool call
+confirm the connection. `python -m py4siesta_mcp --catalog` only checks local catalog
+generation. If connection fails, check the configured Python, existing workdir,
+server errors, and client permissions before starting a calculation. Passing a
+standalone MCP test does not establish that the Codex connection works.
 
 ### Give Codex a calculation task
 
-Start Codex in your calculation directory, or give its absolute path. On first use,
-specify the Python environment or source checkout if `py4siesta-tool` is not on PATH.
-Prepare the usual `origin/input/STRUCT.fdf` and calculation inputs for generation
-workflows; post-processing uses its matching output files instead.
+Invoke `$py4siesta` explicitly and supply the absolute calculation directory, inputs,
+and desired scope. Generation workflows usually require `origin/input/STRUCT.fdf`
+and matching calculation inputs; post-processing uses the relevant output files.
+
+| Mode | Behavior |
+| --- | --- |
+| Free | Discover and compose MCP tools for the user's goal. |
+| Workflow execution | Follow a registered procedure and its allowed branches. |
+| Workflow registration/editing | Create or revise a reusable procedure when requested. |
+
+An explicit mode takes precedence. Otherwise a clearly matching compatible validated
+workflow is selected; other calculation requests use free mode. The skill announces
+its mode. The five bundled [MCP workflow examples](Skills/Codex/py4siesta/workflows/)
+cover k-points, geometry scans/fitting, geometry utilities, submission, and
+post-processing. They remain drafts pending workflow execution validation; they
+are not automatically selected as validated procedures.
 
 Example prompts (replace paths and scientific parameters with your own):
 
 ```text
-$py4siesta In /work/diamond, prepare bulk geometry-optimization cases using
-menu 4 with scaling in x, y and z. Do not submit jobs yet.
+$py4siesta In free mode, prepare bulk k-point cases in /work/diamond
+for grids 2, 4, and 6. Check generated inputs; do not submit jobs.
 
-$py4siesta In /work/interface, use menu 01 → 2 to interpolate between
-initial/STRUCT.fdf and output/STRUCT.fdf: 5 points including endpoints,
-no extrapolation. Check the generated structures.
-
-$py4siesta Analyze completed k-point cases in /work/diamond with menu 3,
+$py4siesta Run my validated k-point analysis workflow in /work/diamond,
 using a 0.01 eV tolerance. Report missing or unconverged calculations.
 
-$py4siesta Resume my previous geometry-optimization task in /work/diamond.
-Read its history and check existing jobs before continuing.
+$py4siesta Register the procedure we just executed as a personal workflow,
+including its MCP tools, inputs, steps, and validation evidence.
+
+$py4siesta Resume my previous task in /work/diamond. Inspect existing
+outputs and submission status before continuing; do not resubmit blindly.
 ```
 
-Codex selects the menu recipe, checks inputs and existing outputs, runs the program,
-and verifies results. Case generation can recreate existing output directories;
-job submission must be part of your request. A generated structure or submitted job
-is not yet a completed, converged SIESTA calculation.
+Case generation can recreate existing output directories; job submission must be
+part of your request. A generated structure or submitted job is not yet a completed,
+converged SIESTA calculation. Missing MCP tools or environment prerequisites stop
+the dependent work. Workflow drafting can proceed offline as unverified.
 
 ### Personal history and reusable workflows
 
-The skill instructs Codex to keep `config.json`, `history/`, `memory/`, and personal
-`workflows/` outside this public repository. The default is
-`~/.local/state/py4siesta-skill`; set `PY4SIESTA_SKILL_STATE` before starting Codex or
-provide an external directory in your prompt to choose another location.
+Personal workflows, memory, and necessary history stay outside this repository,
+by default in `~/.local/state/py4siesta-skill`. Set `PY4SIESTA_SKILL_STATE` before
+registration and keep it set when starting Codex to use another external location.
 
-The skill selectively saves new preferences, verified environment facts, useful
-observations, and reusable workflows. New reusable workflows blocked by tool
-limitations remain drafts, with evidence of the limitation retained for later review.
-History is kept when needed for resumption, continued investigation, validation,
-or requested auditing; unchanged repeats alone create no new record. Before finishing,
-the agent checks what needs saving and reads back changed records to verify persistence.
-Your current request overrides remembered defaults.
-Public recipes and installed skill instructions are not rewritten during calculations.
-The agent reports if filesystem permissions prevent saving records. No records are
-written merely by registering the skill, and no learning continues after the session
-ends. This is file-based reuse of experience, not model retraining.
+Workflow registration/editing occurs only when requested and defaults to personal
+storage. Request public/repository registration explicitly to add a distributable
+workflow. New or unverified procedures remain drafts; meaningful revisions preserve
+prior versions and evidence. Registration alone does not authorize calculations.
+
+The skill saves only useful preferences, verified environment facts, nonduplicate
+observations, and history needed for resumption, uncertain submissions, investigation,
+validation, or requested auditing. Existing logs are referenced rather than copied;
+unchanged repeats create no new record. Saved records are read back, and unavailable
+persistence is reported. Current instructions override memory. No background learning
+or monitoring continues after the session ends.
 
 ## AI-Agent Interface
 
@@ -434,7 +506,7 @@ For a bulk structure from Materials Project, set:
 export MP_API_KEY="<your-materials-project-api-key>"
 ```
 
-Also configure `siesta_psf_location` in `NanoCore/env.py` as described in
+Also configure `siesta_psf_location` in `nanocore/env.py` as described in
 [Configure SIESTA Paths](#configure-siesta-paths).
 
 The scheduler script must be readable and contain either:
@@ -509,12 +581,12 @@ calculations are not automatically modified or resubmitted.
 
 ## Bundled NanoCore
 
-This project is based on `NanoCore`, an older version of the ongoing [`OORINano`](https://github.com/yhkimlab/OORINano) project. `NanoCore` is imported locally from this repository.
+This project is based on `NanoCore`, an older version of the ongoing [`OORINano`](https://github.com/yhkimlab/OORINano) project. `nanocore` is imported locally from this repository.
 
 That means:
 
-- `python -m py4siesta` works from this repository because `NanoCore/` is present locally.
+- `python -m py4siesta` works from this repository because `nanocore/` is present locally.
 - `pip install .` or `pip install -e .` installs `py4siesta`, the
-  `py4siesta_agent` package, and the bundled `NanoCore` package defined in
+  `py4siesta_agent` package, and the bundled `nanocore` package defined in
   `pyproject.toml`.
 - There is no need to fetch `NanoCore` from an external site or package index.

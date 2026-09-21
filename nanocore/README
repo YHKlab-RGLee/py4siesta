@@ -1,0 +1,80 @@
+NanoCore in development
+
+Binary SIESTA files
+-------------------
+from nanocore import siestaio
+
+cell, mesh, rho = siestaio.read_grid('sample.RHO')
+siestaio.write_grid(cell, mesh, rho, file_path='copy.RHO')
+
+Grid values have shape (nspin, nx, ny, nz); file units are unchanged.
+read_dm(file_path) returns nb, ns, numd, listdptr, listd, dm.
+write_dm(*data, file_path='copy.DM') uses the original two-integer DM
+header; additional fields from newer input headers are not preserved.
+
+read_wfsx(file_path), read_hsx(file_path), read_dim(file_path), and
+read_pld(file_path, MAXA, MAXO) support the legacy little-endian layouts
+of the original readers. Other format versions and NetCDF are not covered.
+read_pld returns ISA once: RMAXO, IPHORB, INDXUO, DATM, ISA, LASTO,
+CELL, NSC, XA. These functions are independent of the Siesta object.
+
+Planar averages
+--------------
+from nanocore import siesta
+
+coordinate, values = siesta.planeaverage_grid(target='vh', axis='z', file_path='sample.VH')
+
+Without file_path, the input is <label>.<TARGET>, with label from simobj
+when provided, otherwise label='siesta'. Targets VH/VT return eV;
+RHO/DRHO return e/Ang**3. Coordinates start at zero in Ang. Axes 0/1/2
+(or x/y/z) select lattice planes; spin components are averaged, not summed.
+Only arrays are returned; no PAV file or external macroave call is made.
+planeaverage_grid replaces get_hartree_pot_z.
+
+Atomic connectivity
+-------------------
+from nanocore import Atom, AtomsSystem
+
+atoms = AtomsSystem([Atom('C', [0, 0, 0])],
+                    cell=[[1.4, 0, 0], [0, 8, 0], [0, 0, 8]],
+                    pbc=[True, False, False])
+atoms.calc_connectivity(scale=1.0)
+atoms[0].get_connectivity()   # []: no same-cell neighbors
+atoms[0].get_iconnectivity()  # [(1, (-1, 0, 0)), (1, (1, 0, 0))]
+atoms[0].get_iconnectivity(details=True)
+# [(1, ('C', 'C'), 1.4, (-1, 0, 0)), (1, ('C', 'C'), 1.4, (1, 0, 0))]
+
+get_connectivity(details=True) and get_iconnectivity(details=True) return
+stored (neighbor_serial, symbol_pair, distance_in_Angstrom, cell_shift) rows.
+Their default return formats are unchanged. Both lists keep their own rows;
+symbol pairs and distances are saved during connection calculation and updated
+along with connections during system edits. Getters do not recalculate them.
+
+print(atoms[0]) shows both kinds of connection under one connectivity heading:
+  1  (C, C)  1.400000 Å  cell=(-1, 0, 0)
+  1  (C, C)  1.400000 Å  cell=(1, 0, 0)
+Same-cell connections show cell=(0, 0, 0). Indexing still returns an independent
+Atom copy; getters and printing only read stored values. Retrieve atoms[0]
+again after changing the system. Legacy serial-only input has None for unknown
+neighbor symbols and distances, displayed as '?', until connections are calculated.
+
+Connections use distance <= scale * (covalent_radius_i + covalent_radius_j),
+in Angstrom. Image entries contain an atom serial and an integer shift along
+the three cell vectors. They describe geometric connections, not bond orders.
+PBC must be specified; it is not inferred. Missing radii and invalid periodic
+cells raise ValueError without replacing existing connection lists.
+
+Construction does not calculate connectivity or replace imported connections.
+After calc_connectivity(), its scale is retained: copy_atoms(), supercell
+expansion (*), addition (+), cell/PBC changes, adjust_cell_size(), wrapping
+and mirroring recalculate connections. Addition uses the left system's scale
+if available, otherwise the right system's scale. Full copy and rigid
+translation preserve connections; renumbering and deletion edit their lists.
+Moving/rotating selected atoms or replacing their elements updates affected
+pairs (rotation with a changed cell recalculates the whole structure).
+
+After direct edits to atoms, returned cell/PBC arrays, or connection lists,
+call calc_connectivity() again explicitly. Fractional/Cartesian coordinate
+conversion methods return coordinate representations without automatic
+connectivity maintenance; calculate on the final Cartesian structure with
+the desired PBC. No Bond object or new menu/CLI command is required.

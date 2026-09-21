@@ -1,6 +1,6 @@
 from __future__ import print_function
 from atoms import *
-import siesta2 as s2
+from . import siesta
 
 
 class Transport(object):
@@ -260,7 +260,7 @@ obj.determine_nkpt(elec, max_nk=10, init_nk=1, step_nk=1, opts=None)
         for kgrid in kgrids:
 
             # simulation object
-            sim = s2.Siesta(elec)
+            sim = siesta.Siesta(elec)
 
             # set simulation options
             sim.set_option('kgrid', kgrid)
@@ -270,7 +270,7 @@ obj.determine_nkpt(elec, max_nk=10, init_nk=1, step_nk=1, opts=None)
 
             # run siesta
             sim.run()
-            e = s2.get_total_energy()
+            e = siesta.get_total_energy()
             energies.append(e)
 
         return kgrids, energies

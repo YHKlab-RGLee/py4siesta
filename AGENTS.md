@@ -14,9 +14,9 @@ The project follows a layered architecture:
 * `py4siesta-tool` exposes reusable deterministic operations using NanoCore functionality.
 * `py4siesta` provides user-facing numbered-menu workflows that compose these operations.
 * `py4siesta-agent` composes existing operations in loops for predefined tasks, with decisions restricted to the task's allowed steps and branches.
-* An LLM assistant/skill has broader responsibility for composing and progressively improving workflows using existing operations and accumulated personal memory and workflow registries. It may use `py4siesta-agent` to execute a predefined task.
+* The LLM assistant/skill uses py4siesta MCP tools in free, workflow execution, or workflow registration/editing mode. It does not require `py4siesta-agent`.
 
-This is a hierarchy of responsibilities, not a requirement to call through the GUI/menu interface. Both AI modes may use explicit public NanoCore and py4siesta-tool interfaces directly. Existing menu workflows are initial examples, not limits on possible compositions. Neither AI mode implements or modifies core scientific or deterministic tool functionality as part of workflow execution or improvement.
+This is a hierarchy of responsibilities, not a requirement to call through the GUI/menu interface. `py4siesta-agent` may use public NanoCore and py4siesta-tool interfaces directly; the skill uses them through MCP. Existing menu workflows are initial examples, not limits on possible compositions. Neither AI mode implements or modifies core scientific or deterministic tool functionality as part of workflow execution or improvement.
 
 All GUI/menu-based functionality in `py4siesta` is accessed through numbered menu entries. Each feature should be implemented as a clearly separated functionality and exposed through the menu system using a menu number.
 
@@ -178,31 +178,16 @@ After making changes, agents should verify:
 
 ## Agent Skills Development
 
-* Distribute reusable agent skills within `Skills/Codex/` in this repository, suitable for global registration by users.
-* Treat existing numbered-menu workflows as verified initial examples, not mandatory execution paths or a closed set of workflows. Document menu mappings where applicable, required inputs, tool interfaces, execution steps, and output validation.
-* Use existing py4siesta interfaces, preferring `py4siesta-tool` for non-interactive execution. Verify the executable or source path and Python environment before use; skill registration does not install py4siesta.
-* Let the LLM assistant/skill retrieve, reuse, compose, and progressively improve workflows for the user's goal using existing public NanoCore and py4siesta-tool operations. Workflow definitions and glue code may connect operations, inputs, outputs, branches, and validation steps; they must not implement or modify core scientific or deterministic tool functionality.
-* Keep skill development isolated from existing code, menu behavior, and project layout outside `Skills/Codex/`.
-* Keep personal state outside the public repository and installed skill tree.
-  Persist only information that changes future decisions, validates a meaningful
-  workflow improvement, or enables safe resumption. Repeated unchanged success
-  requires no new persistent record, unless the user requests an audit trail.
-* Let workflows own reusable execution procedures and validation conditions.
-  Create revisions only for meaningful changes; preserve previous revisions and
-  evidence, but retrieve only the compatible current procedure for routine work.
-  Do not maintain a separate duplicate collection of procedural lessons.
-* Keep memory limited to explicit user preferences, verified environment facts,
-  and concise nonduplicate observations of friction. Observations describe the
-  attempted task, limitation, actual workaround or failure, and minimal evidence;
-  successful but inefficient work also qualifies. Do not propose implementations,
-  assign architectural ownership, design APIs, or prioritize development here.
-* Retain history only for requested auditing, safe resumption, uncertain submission
-  status, continuing investigation, or necessary validation evidence. Reference
-  existing calculation outputs/logs rather than copying them. Preserve evidence
-  already retained; do not automatically delete prior records.
-* Retrieve only task-relevant state. Do not read all historical revisions, logs,
-  memories, or observations at startup. Current user instructions take precedence
-  over remembered defaults; unverified attempts must not become validated workflows.
+* Distribute and develop skills within `Skills/Codex/`; preserve existing code, menus, and CLI behavior.
+* Support three modes: free mode composes MCP tools autonomously within the user's scope; workflow execution follows registered steps and allowed branches; registration/editing creates or revises procedures only when requested.
+* Honor an explicit mode. Otherwise use a clearly matching compatible validated workflow, or free mode. Announce mode changes; do not silently alter a registered procedure or expand authorization.
+* Require a user-prepared py4siesta MCP environment for calculation execution. Check only task-relevant tools and prerequisites. Report missing requirements and stop dependent work; do not create environments, install dependencies, change MCP settings, or bypass MCP through CLI/direct Python.
+* Compose existing MCP operations without implementing or modifying scientific or deterministic functionality. Host tools may inspect files and edit workflow/state documents; missing calculation operations require separate development.
+* Store public workflows in `Skills/Codex/py4siesta/workflows/` and default new registrations to external personal storage. Public registration requires an explicit request. Menu workflows are examples, not mandatory paths.
+* Define workflow inputs, units, MCP tools and parameters, result bindings, steps, branches, stopping conditions, outputs, validation, and resumption. Keep machine-specific paths and transient object IDs out of portable procedures.
+* Keep new or unverified workflows as `draft`; promote only against declared completion criteria and evidence. Offline drafting is allowed. Registration alone does not authorize calculation or submission. Preserve prior revisions; revise only for meaningful changes.
+* Keep personal state outside the repository and installed skill tree. Read only relevant records; current instructions override memory. Store procedures only in workflows, preferences and verified environment facts in memory, and nonduplicate factual friction observations without implementation proposals.
+* Retain minimal history for resumption, uncertain submissions, continuing investigation, necessary validation, or requested auditing. Reference existing outputs/logs, preserve retained evidence, and read back saved records. Unchanged success needs no new record; no background learning or monitoring occurs.
 
 ## Non-Negotiable Constraints
 

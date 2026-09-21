@@ -52,7 +52,7 @@ class StructureCandidate:
 
 
 def _write_fdf(path, symbols, positions, cell):
-    """Write database coordinates in the STRUCT.fdf format NanoCore consumes."""
+    """Write database coordinates in the STRUCT.fdf format nanocore consumes."""
 
     species = []
     for symbol in symbols:
@@ -61,7 +61,7 @@ def _write_fdf(path, symbols, positions, cell):
     species_index = {symbol: index + 1 for index, symbol in enumerate(species)}
 
     try:
-        from NanoCore.atomic_data import atomic_number
+        from nanocore.atomic_data import atomic_number
 
         numbers = [atomic_number(symbol) for symbol in species]
     except (KeyError, TypeError) as exc:

@@ -5,8 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-from NanoCore import siestaio
-from NanoCore.utils.fortranio import FortranFile
+from nanocore import siestaio
+from nanocore.utils.fortranio import FortranFile
 
 
 def record(file, fmt, *values):

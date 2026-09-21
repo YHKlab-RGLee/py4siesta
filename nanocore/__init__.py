@@ -20,8 +20,7 @@ import io
 # Calculation interfaces
 #
 
-#from . import siesta
-from . import siesta2 as s2
+from . import siesta
 #from . import quest
 from . import vasp
 

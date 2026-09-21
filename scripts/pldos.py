@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from NanoCore import *
+from nanocore import *
 from matplotlib import cm
 import time, sys,os,glob
 import argparse
@@ -33,7 +33,7 @@ def get_pldos(emin, emax, fermi):
     # get pdos
     Z = []; E = []
     for ind in indice:
-        E1, dos11, dos12 = s2.get_pdos(simobj, emin+fermi, emax+fermi,
+        E1, dos11, dos12 = siesta.get_pdos(simobj, emin+fermi, emax+fermi,
                                        by_atom=1, atom_index=ind,
                                        broad= 0.05, npoints = 500, label = label)
         E = np.array(E1)

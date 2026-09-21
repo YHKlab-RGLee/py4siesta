@@ -8,8 +8,8 @@ import matplotlib.pylab as plt
 import numpy as np
 from scipy.optimize import fminbound, leastsq
 
-from NanoCore import *
-from NanoCore.io import write_xyz
+from nanocore import *
+from nanocore.io import write_xyz
 
 from .utils import copy_contents, last_matching_line, working_dir
 
@@ -42,8 +42,8 @@ def initialize_origin(structure, xc, kpoints, slurm, root="."):
 
     structure_path = structure_path.resolve()
     slurm_path = slurm_path.resolve()
-    structure_system = s2.read_fdf(str(structure_path))
-    simulation = s2.Siesta(structure_system)
+    structure_system = siesta.read_fdf(str(structure_path))
+    simulation = siesta.Siesta(structure_system)
     simulation.set_option("Name", structure_path.stem)
     simulation.set_option("Label", structure_path.stem)
     simulation.set_option("XCfunc", xc_value)
@@ -96,7 +96,7 @@ def stage_pseudopotential_database(
     functional = str(xc).upper()
     if functional not in {"LDA", "GGA"}:
         raise ValueError("Exchange-correlation functional must be either LDA or GGA.")
-    system = s2.read_fdf(str(structure))
+    system = siesta.read_fdf(str(structure))
     symbols = sorted({atom.get_symbol() for atom in system})
     directories = [Path(path).expanduser().resolve() for path in search_directories]
     destination = Path(destination).expanduser().resolve()
@@ -152,7 +152,7 @@ def validate_geometry_optimization(root="."):
         raise FileNotFoundError(
             "Geometry optimization output contains no *.STRUCT_OUT file."
         )
-    s2.read_struct_out(str(structures[-1]))
+    siesta.read_struct_out(str(structures[-1]))
     return {
         "converged": True,
         "normal_exit": str(normal_exit),
@@ -170,9 +170,9 @@ def generate_final_input(root, geometry_result):
         raise FileExistsError("Refusing to overwrite final input: %s" % destination)
     shutil.copytree(source, destination)
     out_structure = Path(geometry_result["structure_output"])
-    optimized = s2.read_struct_out(str(out_structure))
+    optimized = siesta.read_struct_out(str(out_structure))
     with working_dir(destination / "input"):
-        s2.Siesta(optimized).write_struct()
+        siesta.Siesta(optimized).write_struct()
     return destination
 
 
@@ -180,7 +180,7 @@ class SiestaContext:
     def __init__(self):
         self.root = Path.cwd()
         self.origin_dir = self.root / "origin"
-        self.struct = s2.read_fdf(self.origin_dir / "input" / "STRUCT.fdf")
+        self.struct = siesta.read_fdf(self.origin_dir / "input" / "STRUCT.fdf")
 
 
 def sliding_case_label(displacement_mode, components):
@@ -331,9 +331,9 @@ class BaseOperation:
     def finalize_case(self, case_input):
         destination = Path("input")
         if self.output_name == "STRUCT.fdf":
-            s2.Siesta(case_input).write_struct()
+            siesta.Siesta(case_input).write_struct()
         elif self.output_name == "KPT.fdf":
-            simulation = s2.Siesta(self.context.struct)
+            simulation = siesta.Siesta(self.context.struct)
             simulation.set_option("kgrid", list(case_input))
             simulation.write_kpt()
         else:
@@ -821,7 +821,7 @@ class FitOptimizedStructureOperation:
 
             copy_contents(self.context.origin_dir, optimized_dir)
             with working_dir(optimized_dir):
-                s2.Siesta(struct).write_struct()
+                siesta.Siesta(struct).write_struct()
                 shutil.move("STRUCT.fdf", Path("input") / "STRUCT.fdf")
 
         return {
@@ -898,7 +898,7 @@ class InterpolateStructureOperation(BaseOperation):
         struct_path = Path(path).expanduser()
         if not struct_path.is_file():
             raise FileNotFoundError(f"Structure file does not exist: {struct_path}")
-        return s2.read_fdf(struct_path)
+        return siesta.read_fdf(struct_path)
 
     @staticmethod
     def _validate_pair(initial_struct, final_struct):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from NanoCore import *
+from nanocore import *
 import sys
 import numpy as np
 
@@ -8,10 +8,10 @@ x = float(sys.argv[2])
 y = float(sys.argv[3])
 z = float(sys.argv[4])
 
-atom = s2.read_fdf(fname)
+atom = siesta.read_fdf(fname)
 atom.select_all()
 distance = np.array([x,y,z])
 atom.translate(*distance)
 
-sim = s2.Siesta(atom)
+sim = siesta.Siesta(atom)
 sim.write_struct()

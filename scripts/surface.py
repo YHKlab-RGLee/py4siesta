@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-from NanoCore import *
+from nanocore import *
 import os, sys
 
 # Seunghyun Yu, KAIST
 # Last revision: 2021/4/29
 #
 #--REVISION HISTORY--
-#210429 make slab model from bulk with NanoCore library.
+#210429 make slab model from bulk with nanocore library.
 
 # command
 # python make_slab.py {vacuum length}
@@ -24,6 +24,6 @@ if __name__ == "__main__" :
     modified = surflab.fccsurfaces(f'{symbol}' , '111', (1, 1, 6), vac=20, a = a )
 
     #generate STRUCT.fdf file
-    sim = s2.Siesta(modified)
+    sim = siesta.Siesta(modified)
     sim.write_struct()
     print("STRUCT.fdf generated")

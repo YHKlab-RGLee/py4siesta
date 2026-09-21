@@ -60,10 +60,10 @@ def _clean_k_label(label):
 
 
 def read_band(file_path=None):
-    from NanoCore import s2
+    from nanocore import siesta
 
     path = _find_bands_file(file_path)
-    data = s2.get_band(file_path=path, return_data=True)
+    data = siesta.get_band(file_path=path, return_data=True)
     data["energies"] = data["energies"].reshape(data.pop("nkpoints"), -1).T
     data["labels"] = [_clean_k_label(label) for label in data["labels"]]
     return BandStructureData(**data)
@@ -164,9 +164,9 @@ def _find_optional_matching_file(label, suffix, work_dir):
 
 
 def _read_eig_levels(eig_path):
-    from NanoCore import s2
+    from nanocore import siesta
 
-    data = s2.get_eig(file_path=eig_path, return_data=True)
+    data = siesta.get_eig(file_path=eig_path, return_data=True)
     return {key: data[key] for key in ('fermi_level', 'vbm', 'cbm', 'bandgap', 'nspin')}
 
 
@@ -188,10 +188,10 @@ def _read_pdos_energy_reference(label, work_dir, eig_path):
 
 
 def _resolve_siesta_utility(command_name):
-    from NanoCore.env import siesta_util_location
+    from nanocore.env import siesta_util_location
 
     try:
-        from NanoCore.env import siesta_util_pdos
+        from nanocore.env import siesta_util_pdos
     except ImportError:
         siesta_util_pdos = command_name
 
@@ -279,11 +279,11 @@ def _normalize_pdos_selection(selection):
 
 
 def _run_fmpdos_selection(pdos_file, selection, executable):
-    from NanoCore import s2
+    from nanocore import siesta
 
     target = selection["target"]
     indices = [int(target)] if target.isdigit() else None
-    return s2.get_pdos(file_path=pdos_file, atom_index=indices,
+    return siesta.get_pdos(file_path=pdos_file, atom_index=indices,
                        species=None if indices else [target],
                        n=selection.get("n", 0), l=selection.get("l", -1),
                        m=selection.get("m", 9), output_path=selection["output"],
@@ -491,7 +491,7 @@ def process_pldos(
     npoints=1001,
     figure_path="pldos.png",
 ):
-    from NanoCore import io, s2
+    from nanocore import io, siesta
 
     path = _find_pdos_file(file_path).resolve()
     work_dir = path.parent
@@ -514,7 +514,7 @@ def process_pldos(
         projected_dos = []
         energy = None
         for atom_indices in indices:
-            energy_values, dos_up, unused_dos_down = s2.get_pdos(
+            energy_values, dos_up, unused_dos_down = siesta.get_pdos(
                 None,
                 emin,
                 emax,
@@ -584,7 +584,7 @@ def process_pldos(
 
 
 def process_planeaverage_grid(file_path=None, target='VH', axis='z', figure_path=None, txt_path=None):
-    from NanoCore import s2
+    from nanocore import siesta
 
     target = str(target).strip().upper()
     if target not in ('VH', 'VT', 'RHO', 'DRHO'):
@@ -596,7 +596,7 @@ def process_planeaverage_grid(file_path=None, target='VH', axis='z', figure_path
             raise FileNotFoundError(f"No *.{target} file found in the current directory.")
         file_path = matches[0]
     path = Path(file_path).expanduser().resolve()
-    coordinate, values = s2.planeaverage_grid(target=target, axis=axis, file_path=path)
+    coordinate, values = siesta.planeaverage_grid(target=target, axis=axis, file_path=path)
     axis_name = str(axis).strip().lower() if isinstance(axis, str) else 'xyz'[axis]
     name = f"planeaverage_{target}_{axis_name}"
     figure_path = path.parent / (figure_path or name + '.png')

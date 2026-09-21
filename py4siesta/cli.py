@@ -1,7 +1,7 @@
 import glob
 
 import numpy as np
-from NanoCore import s2
+from nanocore import siesta
 
 from .operations import (
     SiestaWorkflow,
@@ -245,7 +245,7 @@ def _run_generate_geometries_menu(workflow) -> None:
         dz = _prompt_float("Input displacement dz: ")
 
         moved_struct = workflow.move(struct, displacement=np.array([dx, dy, dz]))
-        s2.Siesta(moved_struct).write_struct()
+        siesta.Siesta(moved_struct).write_struct()
 
     elif mode == 2:
         _show_section("Interpolate structure")

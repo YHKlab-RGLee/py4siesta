@@ -1,77 +1,61 @@
 ---
 name: py4siesta
-description: Use only when the user explicitly requests the py4siesta skill or calculation work using py4siesta. Prepare, run, and analyze cases by composing existing NanoCore and py4siesta-tool operations and reusing validated personal workflows. SIESTA-related requests alone do not trigger this skill; exclude general DFT advice and source-code development.
+description: Use when explicitly requested to perform py4siesta calculation work or register/edit py4siesta workflows. Solve tasks through connected py4siesta MCP tools in free or registered-workflow mode. Exclude general DFT advice, environment setup, and core/tool source development.
 ---
 
-# py4siesta calculation workflows
+# py4siesta MCP workflows
 
-Compose existing public NanoCore and py4siesta-tool operations to fulfill the user's
-goal. Menu workflows are initial examples, not required paths or a closed catalog.
-Use personal memory and workflow registries to reuse and improve validated compositions.
-Do not implement or modify core scientific or deterministic tool functionality.
-Workflow definitions and glue code may connect existing operations, inputs, outputs,
-branches, and validation steps without reproducing their domain logic.
+Use the user's prepared py4siesta MCP environment to solve calculation tasks and
+manage reusable workflows. Existing menu recipes are examples, not the boundary of
+available operations. This skill does not require `py4siesta-agent`.
 
-This LLM assistant/skill has broader workflow freedom than `py4siesta-agent`, which
-executes predefined tasks in loops within allowed branches and stopping conditions.
-It may invoke that agent for a matching task through a verified public interface;
-using the skill does not require the agent or its optional dependencies.
-Follow the user's requested scope and the working project's instructions.
+## Select a mode
 
-## Start a task
+Identify the goal, calculation directory, inputs, and scope (preparation, submission,
+analysis, or complete calculation). Honor an explicitly requested mode. Otherwise:
 
-1. Identify the calculation directory, goal/function, inputs, and whether
-   the user wants preparation, submission, analysis, or a complete calculation.
-2. Read [state.md](references/state.md). For execution tasks, select the external
-   state directory and load only relevant memories and workflow revisions. Persist
-   only useful new information or required resume/validation evidence. Repetition
-   or explanation alone creates no record; independently useful new facts still qualify.
-3. Read [runtime.md](references/runtime.md). Verify the executable/Python environment
-   and actual command help before writing calculation files.
-4. Reuse a compatible personal workflow, adapt an initial example from
-   [menu-map.md](references/menu-map.md), or compose a new workflow using verified
-   public operations. Read any selected example fully to retain its operational
-   constraints. A menu mapping or base recipe is optional. Establish the applicable
-   revision, inputs, steps, side effects, and completion criteria before execution;
-   do not copy an unchanged workflow into a new persistent plan. Current user instructions override remembered defaults.
+| Request | Mode and instructions |
+| --- | --- |
+| Register, revise, or validate a reusable procedure | [Workflow registration/editing](modes/workflow-edit.md) |
+| Calculation with a clearly matching compatible validated workflow | [Workflow execution](modes/workflow-run.md) |
+| Other calculation work | [Free mode](modes/free.md) |
 
-## Execute and learn
+Announce the selected mode and read only its instructions and relevant references.
+Use [state.md](references/state.md) to search relevant workflow metadata and personal
+facts; do not load all history. Public candidates are in `workflows/`; the optional
+[menu map](references/menu-map.md) indexes their original menu mappings.
 
-- Prefer `py4siesta-tool` for non-interactive execution; direct public NanoCore
-  calls are also available after verifying their interface and environment.
-  Include numbered-menu mappings only where applicable.
-  Run from the calculation directory, never from the installed skill directory.
-- Check existing outputs before generation, fitting, plotting, or resubmission.
-  Follow the recipe's actual overwrite behavior. Preparation does not authorize
-  submitting jobs. Do not repeat a batch submission after an ambiguous failure.
-- Verify each attempt; retain evidence only under the state retention rules. A successful process or JSON result
-  is not proof of SCF convergence, job completion, or physical validity.
-- On failure, preserve evidence, identify a testable cause, and retry only when a
-  changed condition supports it and the action remains in scope. If the same cause
-  persists after a targeted retry, stop that step and report the missing requirement.
-- For interrupted work, read history and inspect files/job status before continuing;
-  do not regenerate completed cases. Record waiting jobs as `waiting`, not complete.
-- Follow the promotion and version rules in [state.md](references/state.md) to
-  improve reusable procedures directly in workflows when a meaningful change is
-  validated. Do not create separate lesson files or revisions for repeated success.
-- Use the [workflow template](assets/workflow.md) for new or adapted compositions,
-  save a draft only when it merits reuse or further validation, and validate the
-  executed steps before promotion.
-  If a step cannot be composed from existing public operations, report the missing
-  observed limitation, attempted operation, and actual workaround or failure.
-  Record new nonduplicate friction in memory/observations.md, including inefficient
-  successful work. Do not propose implementation, API design, layer ownership, or
-  priority as part of these observations. Core/tool implementation is a
-  separate, explicitly requested development task, not workflow improvement.
-  Do not invent commands or APIs, silently alter scientific settings, or modify
-  source to make a workflow work.
+When a registered procedure cannot handle a case, explain the gap before switching
+to free mode. Proceed within existing authorization; ask only when a changed goal,
+scientific choice, or action needs information or authorization not already supplied.
+An explicit request to follow only the workflow forbids an automatic free-mode switch.
+Free and execution modes do not register, revise, or promote workflows automatically;
+enter editing mode only when requested. A combined execute-and-register request
+already authorizes that transition.
 
-Before finishing, including after a failed or blocked task, evaluate each save condition
-in [state.md](references/state.md), complete qualifying writes, and read back changed
-files to verify their location and contents. Do not create records merely to prove
-that this check occurred.
+## Common execution contract
 
-Finish with the workflow and operations used, generated paths, validation, outstanding work,
-record locations only when records were needed, and any memory/workflow change made. State clearly when
-persistence was unavailable. The skill performs no background learning or monitoring
-after the agent session ends.
+- Before calculation calls, follow [mcp.md](references/mcp.md). A connected,
+  compatible py4siesta MCP server and the required tools are prerequisites.
+  The user owns installation, environment preparation, and MCP configuration.
+  Do not create environments, install packages, reconfigure/restart servers, or
+  bypass unavailable MCP tools with shell CLI calls or direct Python API calls.
+- Non-calculation file inspection, artifact viewing, and workflow/state document
+  edits may use host tools. They must not implement missing domain operations or
+  substitute for unavailable calculation, submission, or monitoring MCP functions.
+- Use only existing MCP operations for scientific/deterministic work. Glue may
+  connect their inputs, outputs, branches, and checks; it must not implement or
+  modify core/tool functionality. Report missing operations for separate development.
+- Inspect inputs and existing outputs before mutations. Preparation does not
+  authorize submission. Honor actual overwrite behavior and the user's scope.
+  Never silently change scientific settings or repeat an ambiguous submission.
+- Validate outputs against task criteria: `ok=true` does not establish calculation
+  completion, SCF convergence, or physical validity. Retry only after a testable
+  changed condition; stop the step if the same cause survives a targeted retry.
+- Preserve necessary evidence and resume state under [state.md](references/state.md).
+  Inspect actual outputs/status on resume; waiting jobs remain `waiting`.
+
+Before finishing, apply the independent save conditions in state.md and read back
+any changed records. Report mode, workflow/revision if used, actual results and
+paths, validation, pending work, and records only when saved. Disclose necessary
+persistence failures. There is no background learning or monitoring after the session.

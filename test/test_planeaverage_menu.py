@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from NanoCore import s2, siestaio
+from nanocore import siesta, siestaio
 from py4siesta import post_process
 
 
@@ -37,7 +37,7 @@ class PlaneaverageMenuTests(unittest.TestCase):
         self.assertIn('Please choose one of:', result.stdout)
         self.assertIn('Generated:', result.stdout)
         self.assertFalse((self.root / 'origin').exists())
-        expected = np.column_stack(s2.planeaverage_grid('VH', file_path=source))
+        expected = np.column_stack(siesta.planeaverage_grid('VH', file_path=source))
         np.testing.assert_allclose(np.loadtxt(self.root / 'planeaverage_VH_z.txt'), expected)
         self.assertTrue((self.root / 'planeaverage_VH_z.png').read_bytes().startswith(b'\x89PNG'))
 
@@ -55,7 +55,7 @@ class PlaneaverageMenuTests(unittest.TestCase):
         data = payload['result']
         self.assertEqual(data['axis'], 'x')
         self.assertEqual(data['value_unit'], 'e/Ang**3')
-        np.testing.assert_allclose(np.loadtxt(data['txt']), np.column_stack(s2.planeaverage_grid('DRHO', 0, path)))
+        np.testing.assert_allclose(np.loadtxt(data['txt']), np.column_stack(siesta.planeaverage_grid('DRHO', 0, path)))
         self.assertTrue(Path(data['figure']).is_file())
 
     def test_processing_paths_and_plot_labels(self):

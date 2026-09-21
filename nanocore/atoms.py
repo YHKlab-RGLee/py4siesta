@@ -217,7 +217,7 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
         self.set_charge(charge)
         self.set_fftype(fftype)
         self.set_connectivity(connectivity)
-        #self.set_iconnectivity(iconnectivity)
+        self.set_iconnectivity(iconnectivity)
 
     def __repr__(self):
         info1 = "Atom %s at %s\n" % (self._symbol, list(self._position))
@@ -225,10 +225,18 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
         info3 = "mass : %s   charge : %s   fftype : %s" % (self._mass,
                                                            self._charge,
                                                            self._fftype)
-        if self._connectivity:
-            info4 = "connectivity : %s" % self._connectivity
-            return info1 + info2 + info3 + "\n" + info4
-        else: return info1 + info2 + info3
+        info = info1 + info2 + info3
+        if self._connectivity is None and self._iconnectivity is None:
+            return info
+        connections = (self._connectivity or []) + (self._iconnectivity or [])
+        if not connections: return info + "\nconnectivity: []"
+        lines = [info, 'connectivity:']
+        for serial, symbols, distance, shift in connections:
+            distance = '?' if distance is None else '%.6f' % distance
+            lines.append('  %s  (%s, %s)  %s Å  cell=%s' %
+                         (serial, symbols[0] or '?', symbols[1] or '?',
+                          distance, shift))
+        return '\n'.join(lines)
 
     def set_symbol(self, symbol):
         if isinstance(symbol, str):
@@ -274,10 +282,34 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
         else: self._charge = charge
 
     def set_connectivity(self, connectivity):
-        if connectivity == None: self._connectivity = None
-        elif not (isinstance(connectivity, list) or
-                isinstance(connectivity, tuple)): raise ValueError()
-        else: self._connectivity = connectivity
+        """Accept serials or (serial, symbol_pair, distance, cell_shift) rows."""
+        self._connectivity = self._connection_rows(connectivity, image=False)
+
+    def _connection_rows(self, connections, image):
+        # Keep serial-only input compatible; unknown distances remain None.
+        if connections is None: return None
+        if not isinstance(connections, (list, tuple)):
+            raise ValueError("Connectivity should be a list or tuple.")
+        rows = []
+        for entry in connections:
+            if isinstance(entry, (list, tuple)) and len(entry) == 4:
+                serial, symbols, distance, shift = entry
+            else:
+                if image: serial, shift = entry
+                else: serial, shift = entry, (0, 0, 0)
+                symbols = (self._symbol, None); distance = None
+            if (not isinstance(serial, (int, np.integer)) or len(shift) != 3 or
+                    not all(isinstance(n, (int, np.integer)) for n in shift) or
+                    bool(any(shift)) != image or len(symbols) != 2):
+                raise ValueError("Invalid connectivity row or cell shift.")
+            if distance is not None:
+                distance = float(distance)
+                if not np.isfinite(distance) or distance < 0:
+                    raise ValueError("Connection distance should be finite "
+                                     "and nonnegative.")
+            rows.append((int(serial), tuple(symbols), distance,
+                         tuple(int(n) for n in shift)))
+        return rows
 
     def set_groupid(self, groupid):
         if groupid == None: self._groupid = 1
@@ -296,29 +328,53 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
         elif not type(fftype) == str: raise ValueError()
         else: self._fftype = fftype
 
-    ### under construction... image connectivity ###
-    #def set_iconnectivity(self, iconnectivity):
-    #    if iconnectivity == None: self._iconnectivity = None
-    #    elif not (isinstance(iconnectivity, list) or
-    #            isinstance(iconnectivity, tuple)): raise ValueError
-    #    else: self._iconnectivity = iconnectivity
+    def set_iconnectivity(self, iconnectivity):
+        """Accept image pairs or (serial, symbol_pair, distance, cell_shift) rows.
+
+        The image position is position + n1*v1 + n2*v2 + n3*v3.
+        Zero shifts belong in connectivity, not iconnectivity.
+        """
+        self._iconnectivity = self._connection_rows(iconnectivity, image=True)
 
     def get_symbol(self):return self._symbol
     def get_position(self):return self._position
     def get_mass(self):return self._mass
     def get_charge(self):return self._charge
-    def get_connectivity(self):return self._connectivity
+
+    def get_connectivity(self, details=False):
+        """
+        Return same-cell serials, or full stored rows with details=True.
+
+        Each row is (serial, symbol_pair, distance, cell_shift).
+        Distance is in Angstrom; cell_shift is (0, 0, 0).
+        Calculation and system edits update the rows, not this getter.
+        Serial-only input uses None for unknown symbols and distances.
+
+        Usage:
+        >>> atom.get_connectivity()
+        >>> atom.get_connectivity(details=True)
+        """
+        if self._connectivity is None: return None
+        if details: return self._connectivity[:]
+        return [row[0] for row in self._connectivity]
+
     def get_serial(self):return self._serial
     def get_groupid(self):return self._groupid
     def get_fftype(self):return self._fftype
-    #def get_iconnectivity(self):return self._iconnectivity
+
+    def get_iconnectivity(self, details=False):
+        """Return (serial, shift) pairs, or full stored rows with details=True."""
+        if self._iconnectivity is None: return None
+        if details: return self._iconnectivity[:]
+        return [(row[0], row[3]) for row in self._iconnectivity]
 
     def copy(self):
         return Atom(self.get_symbol(), self.get_position(),
                     self.get_serial(), self.get_groupid(),
                     self.get_mass(), self.get_charge(),
-                    self.get_fftype(), self.get_connectivity())
-                    #self.get_iconnectivity())
+                    self.get_fftype(),
+                    self.get_connectivity(details=True),
+                    self.get_iconnectivity(details=True))
 
     def __add__(self, other):
         if self == other:
@@ -369,11 +425,13 @@ class AtomsSystem(object):
     """
 
     __slots__ = ['_atoms', '_cell', '_pbc', '_selected', '_constraints',
-                 '_pointer', '_bonds']
+                 '_pointer', '_bonds', '_connectivity_scale']
 
     def __init__(self, atoms, cell='None', pbc=[False,False,False], i_serial=1,
                  bonds=None):
 
+        # Connectivity calculation is opt-in; imported connections are preserved.
+        self._connectivity_scale = None
         if not atoms: # 110924 empty AtomsSystem is allowed.
             self._atoms = []
             self._cell = None
@@ -409,13 +467,12 @@ class AtomsSystem(object):
 
     def init_serials(self, i_serial):
         """rearrange serial numbers starting from i_serial"""
-        i=0
-        for atom in self._atoms:
-            atom.set_serial(i+i_serial); i+=1
+        self.set_serials(i_serial)
 
     def set_serials(self, i):
         """rearrange serial numbers"""
         # new serial, update one-to-one correspondence
+        self._pointer = {}
         for atom in self._atoms:
             old_serial = atom.get_serial()
             atom.set_serial(i)
@@ -423,14 +480,18 @@ class AtomsSystem(object):
             i = i + 1
         # update connectivities
         for atom in self._atoms:
-            if atom.get_connectivity():
-                old_connect = atom.get_connectivity()
-                new_connect = []
-                for con in old_connect:
-                    try: new_connect.append(self._pointer[con])
-                    except: pass # dangling bonds exception
-                atom.set_connectivity(new_connect)
-            else: pass
+            if atom.get_connectivity() is not None:
+                atom.set_connectivity([
+                    (self._pointer[serial], symbols, distance, shift)
+                    for serial, symbols, distance, shift
+                    in atom.get_connectivity(details=True)
+                    if serial in self._pointer])
+            if atom.get_iconnectivity() is not None:
+                atom.set_iconnectivity([
+                    (self._pointer[serial], symbols, distance, shift)
+                    for serial, symbols, distance, shift
+                    in atom.get_iconnectivity(details=True)
+                    if serial in self._pointer])
 
     def reset_serials(self): self.set_serials(1)
 
@@ -447,16 +508,22 @@ class AtomsSystem(object):
         >>> 
         """
 
+        old_cell = getattr(self, '_cell', 'None')
         if type(cell_vector) == str:
-            self._cell = 'None'; return
-        cell_vector = np.array(cell_vector)
-
-        if cell_vector.shape == (3,3):
-            self._cell = cell_vector
-        elif cell_vector.shape == (6,):
-            self._cell = convert_abc2xyz(*cell_vector)
-            print ("WARNGING: v3 along z, v2 in xy plane.")
-        else: raise ValueError()
+            self._cell = 'None'
+        else:
+            cell_vector = np.array(cell_vector)
+            if cell_vector.shape == (3,3):
+                self._cell = cell_vector
+            elif cell_vector.shape == (6,):
+                self._cell = convert_abc2xyz(*cell_vector)
+                print ("WARNGING: v3 along z, v2 in xy plane.")
+            else: raise ValueError()
+        try:
+            self._update_connectivity()
+        except ValueError:
+            self._cell = old_cell
+            raise
 
     def scale_cell(self, fr_1, fr_2, fr_3):
         v1 = Vector(self._cell[0])
@@ -466,9 +533,11 @@ class AtomsSystem(object):
         self.set_cell([v1, v2, v3])
 
     def set_vacuum(self, vac, direction='z'):
-        if direction == 'x': self._cell[0][0] += vac
-        if direction == 'y': self._cell[1][1] += vac
-        if direction == 'z': self._cell[2][2] += vac
+        cell = np.array(self._cell, copy=True)
+        if direction == 'x': cell[0][0] += vac
+        if direction == 'y': cell[1][1] += vac
+        if direction == 'z': cell[2][2] += vac
+        self.set_cell(cell)
 
     def get_reciprocal_cell(self, unit=1.0):
         """
@@ -509,18 +578,143 @@ class AtomsSystem(object):
         """
         Impose periodicity of this system: usually for seqquest code
         """
-        pbc = np.array(pbc)
-        if not pbc.all():
-            self._pbc = np.array([False,False,False])
-            return
-        if type(pbc) == int:
-            if pbc == 1: self._pbc = np.array([True,False,False]); return
-            elif pbc == 2: self._pbc = np.array([True,True,False]); return
-            elif pbc == 3: self._pbc = np.array([True,True,True]); return
-            else: raise ValueError("pbc should be lower than 3.")
-        if np.array(pbc).shape == (3,):
-            self._pbc = np.array(pbc)
-        else: raise ValueError("Can`t guess pbc")
+        if isinstance(pbc, (int, np.integer)):
+            if pbc < 0 or pbc > 3:
+                raise ValueError("pbc should be between 0 and 3.")
+            pbc = [i < pbc for i in range(3)]
+        pbc = np.array(pbc, dtype=bool)
+        if pbc.shape != (3,): raise ValueError("Can`t guess pbc")
+        old_pbc = getattr(self, '_pbc', None)
+        self._pbc = pbc
+        try:
+            self._update_connectivity()
+        except ValueError:
+            self._pbc = old_pbc
+            raise
+
+    def calc_connectivity(self, scale=1.0):
+        """Calculate covalent-radius connections, using distances in Angstrom.
+
+        Connect atoms when distance <= scale * (radius_i + radius_j).
+        Both connection lists store (serial, symbol_pair, distance, cell_shift)
+        rows. Same-cell rows go in Atom._connectivity; nonzero image shifts go
+        in Atom._iconnectivity. Use get_connectivity(details=True) or
+        get_iconnectivity(details=True) to retrieve the complete rows.
+        Only directions enabled by get_pbc() are repeated. Self images are
+        allowed, but the atom itself in the same cell is excluded.
+
+        Construction does not calculate connections. Calling this method
+        enables their maintenance by system manipulation methods, using the
+        same scale. Call it again after directly editing atoms, coordinates,
+        the cell array, or stored connection lists. No Bond objects are used.
+        Missing radii or invalid periodic cells raise ValueError, leaving
+        previous connection lists unchanged.
+
+        >>> atoms.calc_connectivity(scale=1.1)
+        >>> atoms[0].get_connectivity()
+        >>> atoms[0].get_iconnectivity()
+        """
+        self._calc_connectivity(scale)
+        self._connectivity_scale = float(scale)
+
+    def _update_connectivity(self, selected=None):
+        if self._connectivity_scale is not None:
+            self._calc_connectivity(self._connectivity_scale, selected)
+
+    def _calc_connectivity(self, scale, selected=None):
+        # Store results only after all pairs have been checked.
+        from itertools import product
+        try:
+            scale = float(scale)
+        except (TypeError, ValueError):
+            raise ValueError("Connectivity scale should be finite and positive.")
+        if not np.isfinite(scale) or scale <= 0:
+            raise ValueError("Connectivity scale should be finite and positive.")
+        serials = self.get_serials()
+        if len(set(serials)) != len(serials):
+            raise ValueError("Connectivity requires unique atom serial numbers.")
+        if not serials: return
+        radii = []
+        for atom in self._atoms:
+            symbol = atom.get_symbol()
+            try:
+                radius = covalent_radii[atomic_number(symbol)]
+            except (KeyError, IndexError, ValueError, TypeError):
+                raise ValueError("No covalent radius for %s." % symbol)
+            if not np.isfinite(radius) or radius <= 0:
+                raise ValueError("No covalent radius for %s." % symbol)
+            radii.append(float(radius))
+        positions = np.array(self.get_positions(), dtype=float)
+        if not np.isfinite(positions).all():
+            raise ValueError("Connectivity requires finite atom positions.")
+        pbc = np.array(self.get_pbc(), dtype=bool)
+        axes = np.flatnonzero(pbc)
+        cell = np.zeros((3,3))
+        if len(axes):
+            try:
+                cell = np.array(self.get_cell(), dtype=float)
+            except (TypeError, ValueError):
+                raise ValueError("Connectivity requires a valid periodic cell.")
+            if cell.shape != (3,3) or not np.isfinite(cell).all():
+                raise ValueError("Connectivity requires a valid periodic cell.")
+            basis = cell[axes]
+            if np.linalg.matrix_rank(basis) != len(axes):
+                raise ValueError("Periodic cell vectors must be independent.")
+            dual = np.linalg.pinv(basis)
+            widths = np.linalg.norm(dual, axis=0)
+
+        selected = set(serials if selected is None else selected)
+        connections = {}; images = {}
+        for atom in self._atoms:
+            serial = atom.get_serial()
+            connections[serial] = [] if serial in selected else [
+                row for row in (atom.get_connectivity(details=True) or [])
+                if row[0] not in selected]
+            images[serial] = [] if serial in selected else [
+                row for row in (atom.get_iconnectivity(details=True) or [])
+                if row[0] not in selected]
+
+        for i, serial_i in enumerate(serials):
+            for j in range(i, len(serials)):
+                serial_j = serials[j]
+                if serial_i not in selected and serial_j not in selected: continue
+                cutoff = scale * (radii[i] + radii[j])
+                if not np.isfinite(cutoff):
+                    raise ValueError("Connectivity cutoff should be finite.")
+                delta = positions[j] - positions[i]
+                ranges = [range(1), range(1), range(1)]
+                if len(axes):
+                    # Bounds in the dual basis cover skew cells, unwrapped
+                    # atoms, and cutoffs spanning more than one image cell.
+                    center = -np.dot(delta, dual)
+                    reach = cutoff * widths
+                    for n, axis in enumerate(axes):
+                        lower = int(np.ceil(center[n] - reach[n] - 1.e-12))
+                        upper = int(np.floor(center[n] + reach[n] + 1.e-12))
+                        ranges[axis] = range(lower, upper+1)
+                for shift in product(*ranges):
+                    if i == j and shift == (0,0,0): continue
+                    displacement = delta + np.dot(shift, cell)
+                    distance = float(np.linalg.norm(displacement))
+                    if distance > cutoff + 1.e-12: continue
+                    symbols = (self._atoms[i].get_symbol(),
+                               self._atoms[j].get_symbol())
+                    forward = (serial_j, symbols, distance, shift)
+                    reverse = (serial_i, symbols[::-1], distance,
+                               tuple(-n for n in shift))
+                    if shift == (0,0,0):
+                        connections[serial_i].append(forward)
+                        connections[serial_j].append(reverse)
+                    else:
+                        images[serial_i].append(forward)
+                        if i != j:
+                            images[serial_j].append(reverse)
+        for atom in self._atoms:
+            serial = atom.get_serial()
+            atom.set_connectivity(sorted(connections[serial],
+                                         key=lambda row: (row[0], row[3])))
+            atom.set_iconnectivity(sorted(images[serial],
+                                          key=lambda row: (row[0], row[3])))
 
     def set_groupids(self, groupid):
         if not self._selected:
@@ -805,6 +999,9 @@ class AtomsSystem(object):
         self._atoms = atoms2
         if with_cell:
             self.rotate_cell(angle, axis_dir)
+        elif (set(self._selected) != set(self.get_serials()) or
+                np.array(self.get_pbc()).any()):
+            self._update_connectivity(self._selected)
 
     def rotate_cell(self, angle, axis_dir=(1.,0.,0.)):
         """
@@ -855,6 +1052,8 @@ class AtomsSystem(object):
                 atom.set_position([x,y,z]); atoms2.append(atom)
             else: atoms2.append(atom)
         self._atoms = atoms2
+        if set(self._selected) != set(self.get_serials()):
+            self._update_connectivity(self._selected)
     
     def sort(self, option='z', verbose=True):
         """
@@ -1114,15 +1313,19 @@ class AtomsSystem(object):
 
     def replace_symbols(self, symbol):
         atoms2 = []
-        atoms = self.copy()
-        i = 0
-        for atom in atoms:
+        changed = []
+        for i, atom in enumerate(self._atoms):
             atom_ = atom.copy()
-            if (i+1) in self._selected:
+            if atom.get_serial() in self._selected:
                 atom_.set_symbol(symbol)
+                changed.append(i+1)
             atoms2.append(atom_)
-            i += 1
-        return AtomsSystem(atoms2, cell=atoms.get_cell())
+        result = AtomsSystem(atoms2, cell=self.get_cell())
+        if self._connectivity_scale is not None:
+            result.set_pbc(self.get_pbc())
+            result._connectivity_scale = self._connectivity_scale
+            result._update_connectivity(changed)
+        return result
    
     ## end from old XYZ module - manipulate ##
 
@@ -1132,16 +1335,23 @@ class AtomsSystem(object):
 
     def __add__(self, other):
         cell = self.get_cell(); pbc = self.get_pbc()
+        scale = self._connectivity_scale
         if isinstance(other, AtomsSystem):
-            atoms = self.copy()._atoms + other.copy()._atoms
-            return AtomsSystem(atoms, cell=cell, pbc=pbc)
+            left = self.copy(); right = other.copy()
+            right.set_serials(len(left)+1)
+            atoms = left._atoms + right._atoms
+            if scale is None: scale = other._connectivity_scale
         elif isinstance(other, Atom):
-            atoms = self.copy()._atoms + [other.copy()]
-            return AtomsSystem(atoms, cell=cell, pbc=pbc)
+            atom = other.copy()
+            atom.set_serial(len(self)+1)
+            atoms = self.copy()._atoms + [atom]
+        else: return
+        result = AtomsSystem(atoms, cell=cell, pbc=pbc)
+        if scale is not None: result.calc_connectivity(scale)
+        return result
 
-    # connectivity across cell boundaries (X)
     def __mul__(self, other):
-        if self.get_cell() == 'None':
+        if self.get_cell() is None or isinstance(self.get_cell(), str):
             raise ValueError("Can`t expand this system without cell vectors.")
         v1, v2, v3 = self.get_cell(); i_serial=1
         loop_1 = 0; loop_2 = 0; loop_3 = 0
@@ -1166,6 +1376,8 @@ class AtomsSystem(object):
                 raise ValueError("Only integer values are allowed.")
         else:
             raise ValueError("1~3 dimension integer arrays")
+        if min(loop_1, loop_2, loop_3) < 0:
+            raise ValueError("Cell repeat counts should be positive.")
 
         k=0; atoms2 = []; pointer = {}
         # along cell[2]
@@ -1190,6 +1402,8 @@ class AtomsSystem(object):
         atoms_supercell.set_cell( np.array([(loop_1+1)*v1,
                                             (loop_2+1)*v2,
                                             (loop_3+1)*v3]) )
+        if self._connectivity_scale is not None:
+            atoms_supercell.calc_connectivity(self._connectivity_scale)
         return atoms_supercell
 
     def __getitem__(self, i):
@@ -1258,16 +1472,16 @@ class AtomsSystem(object):
         atoms2 = []
         for atom in self._atoms:
             atoms2.append(atom.copy())
-        return AtomsSystem(atoms2, cell=self.get_cell(), pbc=self.get_pbc())
+        result = AtomsSystem(atoms2, cell=self.get_cell(), pbc=self.get_pbc())
+        result._connectivity_scale = self._connectivity_scale
+        return result
 
     def copy_atoms(self, selected=None):
         """
         Make an AtomsSystem instance with selected atoms
         
-        Warning!!!
-        Bond instances in the original AtomsSystem will be lost when one copy a
-        part of original AtomsSystem. (Bond calculation methods will be updated
-        ASAP.)
+        If calc_connectivity() has been called, recalculate connections in
+        the copied structure using the same scale and periodic boundaries.
 
         Usage:
         >>> instance.copy_atoms(selected)
@@ -1283,10 +1497,14 @@ class AtomsSystem(object):
             raise ValueError("select more than one atom number"); return
         else:
             atoms2 = []
+            by_serial = {atom.get_serial(): atom for atom in self._atoms}
             for i in self._selected:
-                atoms2.append(self._atoms[i-1].copy())
-            return AtomsSystem(atoms2,cell=self.get_cell(),pbc=self.get_pbc(),
-                               bonds=None)
+                atoms2.append(by_serial[i].copy())
+            result = AtomsSystem(atoms2,cell=self.get_cell(),pbc=self.get_pbc(),
+                                 bonds=None)
+            if self._connectivity_scale is not None:
+                result.calc_connectivity(self._connectivity_scale)
+            return result
     
     def delete(self):
         if self._selected is None:
@@ -1296,14 +1514,14 @@ class AtomsSystem(object):
             if atom.get_serial() not in self._selected:
                 atoms2.append(atom)
         for atom in atoms2:
-            new_cntv = []
-            cntvs = atom.get_connectivity()
-            if cntvs:
-                for cntv in cntvs:
-                    if cntv not in self._selected:
-                        new_cntv.append(cntv)
-                atom.set_connectivity(new_cntv)
-            else: atom.set_connectivity(None)
+            if atom.get_connectivity() is not None:
+                atom.set_connectivity([
+                    row for row in atom.get_connectivity(details=True)
+                    if row[0] not in self._selected])
+            if atom.get_iconnectivity() is not None:
+                atom.set_iconnectivity([
+                    row for row in atom.get_iconnectivity(details=True)
+                    if row[0] not in self._selected])
         self._atoms = atoms2
         #self.refresh_pointer()
 
@@ -1341,7 +1559,7 @@ class AtomsSystem(object):
 
         """
         atoms2 = []
-        cell_inv = np.matrix(self._cell) ** -1
+        cell_inv = np.linalg.inv(self._cell)
         v1, v2, v3 = self.get_cell()
 
         if   direction == 1: v1 = v1 * ratio
@@ -1360,12 +1578,15 @@ class AtomsSystem(object):
         for atom in self._atoms:
             symb = atom.get_symbol()
             x,y,z = atom.get_position()
-            cart_coord = np.matrix(np.array([x,y,z])).T
-            frac_coord = cell_inv * cart_coord
-            x,y,z = cell_new * frac_coord
+            frac_coord = np.dot([x,y,z], cell_inv)
+            x,y,z = np.dot(frac_coord, cell_new)
             atoms2.append(Atom(symb, [x,y,z]))
 
-        return AtomsSystem(atoms2, cell=cell_new)
+        result = AtomsSystem(atoms2, cell=cell_new)
+        if self._connectivity_scale is not None:
+            result.set_pbc(self.get_pbc())
+            result.calc_connectivity(self._connectivity_scale)
+        return result
 
 
     def get_cell_match(self, other, v_self='x', v_other='x', max_unit=5):
@@ -1584,13 +1805,13 @@ class AtomsSystem(object):
             #print x,y,z, sign_x, sign_y, sign_z, '-->',
 
             # make all coordinates in 0 < x,y,z < 1
-            while not (x < 1 and x > 0):
+            while not (x < 1 and x >= 0):
                 x += -sign_x
 
-            while not (y < 1 and y > 0):
+            while not (y < 1 and y >= 0):
                 y += -sign_y
 
-            while not (z < 1 and z > 0):
+            while not (z < 1 and z >= 0):
                 z += -sign_z
 
             #print x,y,z
@@ -1599,6 +1820,9 @@ class AtomsSystem(object):
 
         atoms3 = AtomsSystem(atoms3, cell=atoms2.get_cell())
         atoms4 = atoms3.get_cartesian_coordinate_system()
+        if self._connectivity_scale is not None:
+            atoms4.set_pbc(self.get_pbc())
+            atoms4.calc_connectivity(self._connectivity_scale)
         return atoms4
 
 
@@ -1626,6 +1850,9 @@ class AtomsSystem(object):
         elif plane == 'zx': atoms3.translate(0,1,0)
         else: raise ValueError("Invaild plane type: plane = xy, yz, or zx")
         atoms4 = atoms3.get_cartesian_coordinate_system()
+        if self._connectivity_scale is not None:
+            atoms4.set_pbc(self.get_pbc())
+            atoms4.calc_connectivity(self._connectivity_scale)
         return atoms4
 
 

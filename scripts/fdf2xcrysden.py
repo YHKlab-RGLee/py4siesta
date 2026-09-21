@@ -1,9 +1,9 @@
 #!/usr/bin/env python 
-from NanoCore import *
-from NanoCore import vis
+from nanocore import *
+from nanocore import vis
 
 def fdf2xcrysden(xyz_name):
-    at = s2.read_fdf(xyz_name)
+    at = siesta.read_fdf(xyz_name)
     vis.show_xcrysden(at)
 
 if __name__ == '__main__':

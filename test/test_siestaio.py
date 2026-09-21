@@ -6,7 +6,7 @@ from unittest import mock
 
 import numpy as np
 
-from NanoCore import Atom, AtomsSystem, s2, siestaio
+from nanocore import Atom, AtomsSystem, siesta, siestaio
 
 
 class SiestaIOTests(unittest.TestCase):
@@ -16,7 +16,7 @@ class SiestaIOTests(unittest.TestCase):
         os.chdir(self.directory.name)
         self.atoms = AtomsSystem([Atom('C', [0, 0, 0]), Atom('H', [1, 1, 1])],
                                  cell=np.eye(3) * 4)
-        self.sim = s2.Siesta(self.atoms)
+        self.sim = siesta.Siesta(self.atoms)
 
     def tearDown(self):
         os.chdir(self.previous)
@@ -45,12 +45,12 @@ class SiestaIOTests(unittest.TestCase):
         self.assertEqual(result.get_symbols(), ['C', 'H'])
         np.testing.assert_array_equal(result.get_positions(), expected.get_positions())
         np.testing.assert_array_equal(result.get_cell(), expected.get_cell())
-        np.testing.assert_array_equal(s2.read_fdf('custom.fdf').get_cell(), expected.get_cell())
+        np.testing.assert_array_equal(siesta.read_fdf('custom.fdf').get_cell(), expected.get_cell())
 
     def test_basis_and_kpt_roundtrip(self):
         self.sim._params.update(BasisSize='DZP', EnergyShift=85.0,
                                 kgrid=[2, 3, 4], kshift=[0.0, 0.5, 0.25])
-        other = s2.Siesta(self.atoms)
+        other = siesta.Siesta(self.atoms)
         for name, filename in [('basis', 'BASIS.fdf'), ('kpt', 'KPT.fdf')]:
             getattr(self.sim, 'write_' + name)()
             expected = siestaio.__dict__['read_' + name](filename)
@@ -69,11 +69,11 @@ class SiestaIOTests(unittest.TestCase):
                      {'Spin': 'spin-orbit'}]
         for options in scenarios:
             with self.subTest(options=options):
-                source = s2.Siesta(self.atoms)
+                source = siesta.Siesta(self.atoms)
                 source._params.update(options)
                 source.write_siesta()
                 expected = Path('RUN.fdf').read_bytes()
-                target = s2.Siesta(self.atoms)
+                target = siesta.Siesta(self.atoms)
                 result = target.read_siesta()
                 self.assertEqual(result, siestaio.read_siesta())
                 for key, value in result.items():

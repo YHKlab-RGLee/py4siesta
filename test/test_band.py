@@ -6,7 +6,7 @@ from unittest import mock
 
 import numpy as np
 
-from NanoCore import s2
+from nanocore import siesta
 from py4siesta import post_process
 
 
@@ -24,9 +24,9 @@ class BandTests(unittest.TestCase):
                         lines.append(prefix + ' '.join(str(v + k) for v in values[start:start + 10]))
                 lines.extend(['2', "0 'G'", "1 'X'"])
                 path.write_text('\n'.join(lines) + '\n')
-                with mock.patch.object(s2.os, 'system', side_effect=AssertionError('external utility')):
-                    result = s2.get_band(None, None, label=str(path.with_suffix('')))
-                    data = s2.get_band(None, None, bands_path=path, return_data=True)
+                with mock.patch.object(siesta.os, 'system', side_effect=AssertionError('external utility')):
+                    result = siesta.get_band(None, None, label=str(path.with_suffix('')))
+                    data = siesta.get_band(None, None, bands_path=path, return_data=True)
                 self.assertEqual(len(result), 2 * nspin)
                 for spin in range(nspin):
                     np.testing.assert_allclose(result[2 * spin], [[0, 1]] * nbands)
@@ -42,7 +42,7 @@ class BandTests(unittest.TestCase):
                     nspin=1, special_k=np.array([0]), labels=['G'],
                     fermi_level=0, bandgap=0, vbm=0)
         with tempfile.NamedTemporaryFile(suffix='.bands') as source:
-            with mock.patch.object(s2, 'get_band', return_value=data) as reader:
+            with mock.patch.object(siesta, 'get_band', return_value=data) as reader:
                 result = post_process.read_band_structure(source.name)
             reader.assert_called_once_with(file_path=Path(source.name), return_data=True)
         self.assertIsInstance(result, post_process.BandStructureData)
@@ -57,8 +57,8 @@ class BandTests(unittest.TestCase):
                 Path('RUN.fdf').write_text('Existing input\n')
                 simulation = mock.Mock()
                 simulation._params = {'Label': 'siesta'}
-                with mock.patch.object(s2, '_read_band_structure', return_value={}) as reader:
-                    self.assertEqual(s2.get_band(simulation, 'path.fdf', rerun=1, return_data=True), {})
+                with mock.patch.object(siesta, '_read_band_structure', return_value={}) as reader:
+                    self.assertEqual(siesta.get_band(simulation, 'path.fdf', rerun=1, return_data=True), {})
                 simulation.run.assert_called_once_with(mode='POST')
                 reader.assert_called_once_with(Path('siesta.bands'))
                 self.assertEqual(Path('RUN.fdf').read_text(), 'Existing input\nBandLinesScale pi/a\nWriteBands            T')

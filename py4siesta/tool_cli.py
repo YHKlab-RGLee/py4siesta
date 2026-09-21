@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from NanoCore import s2
+from nanocore import siesta
 
 from .operations import SiestaWorkflow, initialize_origin, prepare_sliding_cases
 from .post_process import process_band, process_pdos, process_pldos, process_planeaverage_grid
@@ -201,7 +201,7 @@ def _cmd_planeaverage_grid(args):
 def _cmd_move_structure(args):
     workflow = _workflow()
     moved = workflow.move(workflow.struct, displacement=np.array([args.dx, args.dy, args.dz], dtype=float))
-    s2.Siesta(moved).write_struct()
+    siesta.Siesta(moved).write_struct()
     return {"output": "STRUCT.fdf", "displacement": [args.dx, args.dy, args.dz]}
 
 

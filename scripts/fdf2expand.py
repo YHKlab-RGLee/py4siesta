@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from NanoCore import *
+from nanocore import *
 import sys
 import numpy as np
 
@@ -7,7 +7,7 @@ fname = sys.argv[1]
 ratio = float(sys.argv[2])
 axis = sys.argv[3]
 
-atom = s2.read_fdf(fname)
+atom = siesta.read_fdf(fname)
 
 if axis == 'a':
     atom2 = atom.adjust_cell_size(ratio, direction=1)
@@ -20,5 +20,5 @@ elif axis == 'ab':
 elif axis == 'abc':
     atom2 = atom.adjust_cell_size(ratio, direction=7)
 
-sim = s2.Siesta(atom2)
+sim = siesta.Siesta(atom2)
 sim.write_struct()

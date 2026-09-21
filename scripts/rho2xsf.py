@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from NanoCore import *
+from nanocore import *
 import sys, os
 import numpy as np
 import glob
@@ -7,7 +7,7 @@ import glob
 system = glob.glob('*.DM')[0].split('.')[0]
 fname = sys.argv[1]
 out = sys.argv[2]
-atom = s2.read_fdf(fname)
+atom = siesta.read_fdf(fname)
 cell = atom._cell
 
 #cmd = f'rho2xsf\n'

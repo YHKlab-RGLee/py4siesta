@@ -1,7 +1,7 @@
 interface:
   display_name: "py4siesta"
-  short_description: "Compose and improve SIESTA calculation workflows"
-  default_prompt: "Use $py4siesta to perform my calculation task by composing existing core/tool operations, reusing personal memory, and saving validated workflow revisions."
+  short_description: "Solve and manage workflows through py4siesta MCP"
+  default_prompt: "Use $py4siesta to solve my task through the connected MCP in free or workflow execution mode, or register/edit a workflow when requested."
 
 policy:
   allow_implicit_invocation: false

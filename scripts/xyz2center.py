@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from NanoCore import *
+from nanocore import *
 import sys
 import numpy as np
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-from NanoCore import *
+from nanocore import *
 import sys
 import numpy as np
 
-#atom = s2.read_fdf('gnr.fdf')
-atom1 = s2.read_fdf(sys.argv[1])
-atom2 = s2.read_fdf(sys.argv[2])
+#atom = siesta.read_fdf('gnr.fdf')
+atom1 = siesta.read_fdf(sys.argv[1])
+atom2 = siesta.read_fdf(sys.argv[2])
 
 atom3 = atom1.copy()
 
@@ -16,6 +16,6 @@ for initial_atom, final_atom, middle_atom in zip(atom1._atoms, atom2._atoms, ato
     middle_position = (initial_position + final_position) / 2
     middle_atom.set_position(Vector(middle_position))
 
-sim = s2.Siesta(atom3)
+sim = siesta.Siesta(atom3)
 sim.write_struct()
 

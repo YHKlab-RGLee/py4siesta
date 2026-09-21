@@ -1,3 +1,7 @@
+> Historical CLI recipe, preserved as migration evidence. Do not execute its
+> commands under the current skill. Use the [MCP draft](../../workflows/post-processing/r2.md)
+> and the current mode and MCP rules instead.
+
 # Post-processing — revision 1
 
 Menus: `11`, `12`, `13`. Read runtime.md before execution. No origin directory needed.
@@ -38,7 +42,7 @@ py4siesta-tool pldos --pdos-path Device.PDOS --emin -4 --emax 2
 ```
 
 Requires matching .xyz and .EIG and the configured NanoCore PDOS utility used by
-`s2.get_pdos`. Optional flags include --zmin, --zmax, --broad and --npoints; inspect
+`siesta.get_pdos`. Optional flags include --zmin, --zmax, --broad and --npoints; inspect
 current help. Writes `pldos.png`, `pldos_z.csv`, `pldos_energy.csv`, `pldos.csv` beside
 .PDOS. Verify z groups, energy reference (Fermi), dimensions and nonempty density.
 Current implementation uses the spin-up PDOS channel and exports log density; do not

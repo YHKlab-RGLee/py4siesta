@@ -38,7 +38,7 @@ export PY4SIESTA_SIESTA_BIN="/home2/rong/bin/siesta_4.1b4"
 export PY4SIESTA_MPIRUN="/opt/intel/oneapi/mpi/2021.12/bin/mpirun"
 ```
 
-`NanoCore/env.py` already points to `/home2/rong/bin/psf`. The required LDA
+`nanocore/env.py` already points to `/home2/rong/bin/psf`. The required LDA
 pseudopotentials are therefore found automatically:
 
 ```text

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from NanoCore import *
+from nanocore import *
 import siestaio as io
 import grid
 import os,glob,sys
@@ -75,7 +75,7 @@ else:
 grid1 = grid.sum(axis=0)    # spin sum
 
 
-atom = s2.read_fdf('STRUCT.fdf')
+atom = siesta.read_fdf('STRUCT.fdf')
 atom1 = (atom._atoms[indx1].get_position())
 atom2 = (atom._atoms[indx2].get_position())
 

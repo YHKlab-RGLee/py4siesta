@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from NanoCore import s2
+from nanocore import siesta
 from py4siesta import post_process
 
 
@@ -17,8 +17,8 @@ class EigenvalueTests(unittest.TestCase):
             with self.subTest(path=path.name):
                 expected, ef = reference['get_eigs'](str(path))
                 vbm, cbm = reference['get_level'](expected, ef)
-                energies, actual_ef = s2.get_eig(eig_path=path)
-                data = s2.get_eig(eig_path=path, return_data=True)
+                energies, actual_ef = siesta.get_eig(eig_path=path)
+                data = siesta.get_eig(eig_path=path, return_data=True)
                 np.testing.assert_array_equal(energies, expected)
                 self.assertEqual(actual_ef, ef)
                 self.assertEqual(data['vbm'], vbm)
@@ -29,7 +29,7 @@ class EigenvalueTests(unittest.TestCase):
         for path in (root / 'test/post-process').glob('*/OUT/*.bands'):
             with self.subTest(path=path.name):
                 ef, vbm, cbm = reference['get_bands'](str(path))
-                data = s2.get_band(None, None, bands_path=path, return_data=True)
+                data = siesta.get_band(None, None, bands_path=path, return_data=True)
                 self.assertEqual((data['fermi_level'], data['vbm'], data['cbm']), (ef, vbm, cbm))
                 self.assertEqual(post_process.read_band_structure(path).cbm, cbm)
 
@@ -43,7 +43,7 @@ class EigenvalueTests(unittest.TestCase):
                 lines.append(str(index) + ' ' + ' '.join(map(str, values[:10])))
                 lines.append(' '.join(map(str, values[10:])))
             path.write_text('\n'.join(lines) + '\n')
-            data = s2.get_eig(label=str(path.with_suffix('')), return_data=True)
+            data = siesta.get_eig(label=str(path.with_suffix('')), return_data=True)
             np.testing.assert_array_equal(data['energies'], np.array([first, second]).reshape(2, 2, 6))
             self.assertEqual((data['nbands'], data['nspin'], data['nkpoints']), (6, 2, 2))
             self.assertEqual(data['vbm'], 0.11)
@@ -51,7 +51,7 @@ class EigenvalueTests(unittest.TestCase):
             self.assertAlmostEqual(data['bandgap'], 0.02)
             path.write_text('\n'.join(lines[:-1]))
             with self.assertRaises(ValueError):
-                s2.get_eig(eig_path=path)
+                siesta.get_eig(eig_path=path)
 
 
 if __name__ == '__main__':

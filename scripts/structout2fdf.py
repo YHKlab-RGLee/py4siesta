@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-from NanoCore import *
+from nanocore import *
 import sys, os
 import glob
 
 files = glob.glob('*STRUCT_OUT')[0]
 
-atom = s2.read_struct_out(files)
-system = s2.Siesta(atom)
+atom = siesta.read_struct_out(files)
+system = siesta.Siesta(atom)
 system.write_struct()

@@ -6,7 +6,7 @@ import os,glob,sys
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
-from NanoCore import *
+from nanocore import *
 
 ang2bohr = np.float64(1.889725989)
 Ry2eV = 13.6056980659
@@ -120,7 +120,7 @@ if __name__=='__main__':
     print(center)
 
     if sys.argv[2]:
-        atom = s2.read_fdf('STRUCT.fdf')
+        atom = siesta.read_fdf('STRUCT.fdf')
         atom1 = (atom._atoms[int(sys.argv[2])].get_position())
         center = np.array(atom1)
 

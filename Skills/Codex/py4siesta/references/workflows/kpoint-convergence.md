@@ -1,3 +1,7 @@
+> Historical CLI recipe, preserved as migration evidence. Do not execute its
+> commands under the current skill. Use the [MCP draft](../../workflows/kpoint-convergence/r2.md)
+> and the current mode and MCP rules instead.
+
 # K-point convergence — revision 1
 
 Menus: `1`, `2`, `3`, optionally `9`. Read runtime.md before execution.

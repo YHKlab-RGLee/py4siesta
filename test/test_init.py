@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from NanoCore import env, s2
+from nanocore import env, siesta
 from py4siesta import tool_cli
 from py4siesta.operations import SiestaContext, initialize_origin
 from py4siesta.utils import working_dir
@@ -56,7 +56,7 @@ class InitToolTests(unittest.TestCase):
             self.assertIn("   0   2   0", kpt_text)
             self.assertIn("   0   0   2", kpt_text)
 
-            self.assertEqual(len(s2.read_fdf(input_dir / "STRUCT.fdf")), 2)
+            self.assertEqual(len(siesta.read_fdf(input_dir / "STRUCT.fdf")), 2)
             with working_dir(project):
                 self.assertEqual(len(SiestaContext().struct), 2)
 

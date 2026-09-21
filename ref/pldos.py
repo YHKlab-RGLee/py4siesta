@@ -1,4 +1,4 @@
-from NanoCore import *
+from nanocore import *
 from matplotlib import cm, colors
 import time, sys,os,glob
 import os
@@ -37,7 +37,7 @@ print( Fermi )
 # get pdos
 Z = []; E = []
 for ind in indice:
-    E1, dos11, dos12 = s2.get_pdos(0.0, -10.0, 0.0, by_atom=1, atom_index=ind, broad= 0.02, npoints = 1001, label = fname)
+    E1, dos11, dos12 = siesta.get_pdos(0.0, -10.0, 0.0, by_atom=1, atom_index=ind, broad= 0.02, npoints = 1001, label = fname)
     E = np.array(E1)
     Z.append(np.array(dos11))
 

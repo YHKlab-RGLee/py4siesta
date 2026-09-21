@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from NanoCore import *
+from nanocore import *
 import sys
 import numpy as np
 
@@ -14,10 +14,10 @@ elif axis == 'y':
 elif axis == 'z':
     iaxis = (0,0,1)
 
-atom = s2.read_fdf(fname)
+atom = siesta.read_fdf(fname)
 atom.select_all()
 center = atom.center(mode="geom")
 atom.rotate(angle,center,iaxis)
-sim = s2.Siesta(atom)
+sim = siesta.Siesta(atom)
 sim.write_struct()
 

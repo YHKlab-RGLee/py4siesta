@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from NanoCore import *
+from nanocore import *
 import sys
 import numpy as np
 
@@ -7,8 +7,8 @@ fname1 = sys.argv[1]
 fname2 = sys.argv[2]
 axis = sys.argv[3]
 
-atom1 = s2.read_fdf(fname1)
-atom2 = s2.read_fdf(fname2)
+atom1 = siesta.read_fdf(fname1)
+atom2 = siesta.read_fdf(fname2)
 
 cell1 = atom1.get_cell()
 cell2 = atom2.get_cell()
@@ -30,7 +30,7 @@ print(cell)
 
 atom = atom1._atoms + atom2._atoms
 new = atoms.AtomsSystem(atom, cell=cell)
-sim = s2.Siesta(new)
+sim = siesta.Siesta(new)
 sim.write_struct()
 
 

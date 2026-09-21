@@ -1,3 +1,7 @@
+> Historical CLI recipe, preserved as migration evidence. Do not execute its
+> commands under the current skill. Use the [MCP draft](../../workflows/geometry-utilities/r2.md)
+> and the current mode and MCP rules instead.
+
 # Geometry utilities — revision 1
 
 Menus: `01 → 1`, `01 → 2`. Read runtime.md before execution.

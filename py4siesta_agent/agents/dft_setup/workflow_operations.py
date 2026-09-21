@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from NanoCore import env as nanocore_env
+from nanocore import env as nanocore_env
 from py4siesta.operations import (
     SiestaWorkflow,
     generate_final_input,

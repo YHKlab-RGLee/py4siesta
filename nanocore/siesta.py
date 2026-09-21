@@ -38,7 +38,7 @@ Siesta(atoms)
     >>> H2 = Atom('H', Vector( 0.6, 0.6, 0))
     >>> basis = [O1, H1, H2]
     >>> atoms = AtomsSystem(basis)
-    >>> sim = s2.Siesta(atoms)
+    >>> sim = siesta.Siesta(atoms)
     """
 
     #__slots__ = ['_params', '_atoms', '_inputs']
@@ -249,7 +249,7 @@ Siesta(atoms)
 
         """Return the configured pseudopotential files required by this system."""
 
-        from NanoCore.env import siesta_psf_location
+        from nanocore.env import siesta_psf_location
 
         xc = str(self._params['XCfunc']).upper()
         relativistic = self._params['XCrel']
@@ -311,8 +311,8 @@ Siesta(atoms)
         """
 
         # get the location of executable
-        from NanoCore.env import siesta_calculator as executable
-        from NanoCore.env import siesta_psf_location as psf_path
+        from nanocore.env import siesta_calculator as executable
+        from nanocore.env import siesta_psf_location as psf_path
 
         if mode == 'SCF' or mode == 'POST': 
             self._params['Optimization'] = 0
@@ -420,8 +420,8 @@ def get_dos(emin, emax, npoints=1001, broad=0.05, label='siesta', simobj=None, f
     Return energy, total DOS, spin-up DOS, spin-down DOS as lists.
     Writes DOS in the current directory; emin/emax/broad are in eV."""
 
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_dos as sud
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_dos as sud
     os.system('%s/%s -f -s %f -n %i -m %f -M %f %s > DOS' % (sul, sud,
                                                                  broad, npoints,
                                                                  emin, emax, quote(str(_postprocess_path(file_path, simobj, label, 'EIG')))))
@@ -590,7 +590,7 @@ def get_eig(label='siesta', eig_path=None, return_data=False, simobj=None, file_
 
 def siesta_xsf2cube(f_in, grid_type):
 
-    from NanoCore.io import ang2bohr
+    from nanocore.io import ang2bohr
 
     # read file
     lines = open(f_in).readlines()
@@ -706,7 +706,7 @@ def get_ldos(v1, v2, v3, origin, nmesh, label='siesta'):
 
     Example
     --------
-    >>> s2.get_ldos(v1, v2, v3, origin, nmesh)
+    >>> siesta.get_ldos(v1, v2, v3, origin, nmesh)
     """
 
     # add block
@@ -733,8 +733,8 @@ def get_ldos(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_rho as sur
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_rho as sur
     os.system('%s/%s < INP' % (sul, sur))
 
     # convert 
@@ -764,7 +764,7 @@ def get_rho(v1, v2, v3, origin, nmesh, label='siesta'):
 
     Example
     --------
-    >>> s2.get_rho(v1, v2, v3, origin, nmesh)
+    >>> siesta.get_rho(v1, v2, v3, origin, nmesh)
     """
 
     # add keyword
@@ -789,8 +789,8 @@ def get_rho(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_rho as sur
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_rho as sur
     os.system('%s/%s < INP > OUT' % (sul, sur))
 
     # convert 
@@ -807,7 +807,7 @@ def get_pdos(simobj=None, emin=None, emax=None, by_atom=1, atom_index=None, spec
     unshifted; absent spin-down is empty. emin/emax/broad/npoints/by_atom
     remain compatibility arguments and do not filter or broaden data.
     """
-    from NanoCore.env import siesta_util_location, siesta_util_pdos
+    from nanocore.env import siesta_util_location, siesta_util_pdos
 
     path = _postprocess_path(file_path, simobj, label, 'PDOS').resolve()
     if executable is None:
